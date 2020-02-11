@@ -3,7 +3,7 @@
 Scala-Playframeworkの学習をするためのハンズオン資料を作成します
 
 ## requirements
-- docker
+- Docker
 
 ## versions
 - Playframework 2.8
@@ -14,3 +14,10 @@ Scala-Playframeworkの学習をするためのハンズオン資料を作成し�
 
 ### project_root
 ハンズオンで実際に作成するプロジェクトを配置しています
+
+
+## TODO/悩み
+
+1. 章立てを作成
+1. 作成するシステムを決める
+1. 外部キー制約やjoin
