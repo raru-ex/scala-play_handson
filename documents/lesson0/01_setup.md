@@ -100,5 +100,5 @@ root@8f6b2156168d:/source# sbt
 Playが起動したらhost側のブラウザから以下のurlからサーバにアクセスしてみましょう。  
 [http://localhost:9000](http://localhost:9000)  
 
-以下の画面が表示されれば起動は成功です
-
+以下の画面が表示されれば起動は成功です  
+![play hello world](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/images/documents/images/lesson0/play%E8%B5%B7%E5%8B%95.png?raw=true = 750x)  
