@@ -101,4 +101,4 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 [http://localhost:9000](http://localhost:9000)  
 
 以下の画面が表示されれば起動は成功です  
-![play hello world](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/images/documents/images/lesson0/play%E8%B5%B7%E5%8B%95.png?raw=true = 750x)  
+![play hello world](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/images/documents/images/lesson0/play%E8%B5%B7%E5%8B%95.png?raw=true&s=750)  
