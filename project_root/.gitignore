@@ -23,3 +23,7 @@ generated.truststore
 .settings/
 .cache-main
 .cache-tests
+
+# docker
+/docker/db/mysql_data
+!/docker/db/mysql_data/.gitkeep

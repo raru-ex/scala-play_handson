@@ -17,7 +17,7 @@ sbtコマンドでのセットアップも可能ですが、sbtがインスト�
 ダウンロードしたファイルを展開し、プロジェクトのルートに配置します。  
 今回はproject_rootフォルダを作成済みのため、ダウンロードファイルが展開された後の中身だけを配置します。  
 
-### プロジェクトに対してのDockerをセットアップ
+### DockerでPlay-Scalaの実行環境をセットアップ
 project_root直下にdocker-compose.yamlファイルを作成  
 以下の内容をdocker-composeファイルに貼り付け  
 
@@ -102,3 +102,107 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 
 以下の画面が表示されれば起動は成功です  
 ![play hello world](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/images/documents/images/lesson0/play%E8%B5%B7%E5%8B%95.png?raw=true&s=750)  
+
+## DBのセットアップ
+
+### Docker Serviceの設定追加
+
+DB用のdocker-compose設定を行なっていきます。  
+`project_root` 直下に以下のようにディレクトリ/ファイルを作成してください。  
+`init.sql` を作成していますが、現状利用しないため中身は空のままとしておいてください。  
+
+```sh
+docker
+└── db
+    ├── Dockerfile
+    ├── init
+    │   └── init.sql
+    ├── my.cnf
+    └── mysql_data
+```
+
+
+`docker-compose.yaml` にDBのService設定を追加します。  
+以下の設定をファイルに追加してください。  
+
+```yaml
+  db:
+    build: ./docker/db
+    ports:
+      - "3306:3306"
+    container_name: db
+    volumes:
+      # 初期データを投入するSQLが格納されているdir
+      - ./docker/db/init:/docker-entrypoint-initdb.d
+      # 永続化するときにマウントするdir
+      - ./docker/db/mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      # Container内にデータベースを作成 TODO: システム名は検討
+      MYSQL_DATABASE: twitter
+    networks:
+      - app-net
+```
+
+最終的に以下のようになっていればOKです
+
+```yaml
+version: '3'
+services:
+  play-scala:
+    image: hseeberger/scala-sbt:8u242_1.3.8_2.13.1
+    container_name: play-scala
+    ports:
+      - "9000:9000"
+    volumes:
+      - .:/source
+      - ./.ivy2:/root/.ivy2
+      - ./.sbt:/root/.sbt
+      - ./.cache:/root/.cache
+    working_dir: /source
+    tty: true
+    networks:
+      - app-net
+  db:
+    build: ./docker/db
+    ports:
+      - "3306:3306"
+    container_name: db
+    volumes:
+      # 初期データを投入するSQLが格納されているdir
+      - ./docker/db/init:/docker-entrypoint-initdb.d
+      # データを永続化するときにマウントするdirを指定
+      - ./docker/db/mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      # TODO: システム名は検討
+      MYSQL_DATABASE:      twitter
+    # play-scalaと同一ネットワーク上に置く
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+```
+
+設定が完了したため、Serviceの動作を確認します。  
+
+```sh
+$ docker-compose up -d
+# ... 起動まで待ちます ...
+
+# ... 起動完了したら以下のコマンドでステータスを確認 ...
+$ docker-compose ps
+   Name                Command             State                 Ports
+------------------------------------------------------------------------------------
+db           docker-entrypoint.sh mysqld   Up      0.0.0.0:3306->3306/tcp, 33060/tcp
+play-scala   bash                          Up      0.0.0.0:9000->9000/tcp
+
+```
+
+これでDockerの設定は完了です。  
+
+
+## Playframeworkの初期セットアップ
+
