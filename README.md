@@ -22,3 +22,10 @@ Scala-Playframeworkの学習をするためのハンズオン資料を作成し�
 1. 作成するシステムを決める
 1. 外部キー制約やjoin
 1. DBのTimezone設定を日本時間に変更
+
+## memo
+
+1. evolutionsでtweet table作成
+1. evolutionsでseed dataを投入
+1. slick-codegenでtweetモデル作成
+1. tweet一覧表示機能を作成

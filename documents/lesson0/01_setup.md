@@ -206,3 +206,43 @@ play-scala   bash                          Up      0.0.0.0:9000->9000/tcp
 
 ## Playframeworkの初期セットアップ
 
+### build.sbtに依存関係を追加
+
+今回はplay-slickやslick-codegenを利用して環境を作成していきます。  
+以下の依存関関係を`build.sbt`へ追加してください。  
+
+```scala
+"com.typesafe.play"      %% "play-slick"            % "5.0.0",
+"com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
+// play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
+// https://github.com/playframework/play-slick#all-releases
+"com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+```
+
+依存関係を追加すると`build.sbt`ファイルは以下のようになります。  
+```scala
+lazy val root = (project in file("."))
+  .enablePlugins(PlayScala)
+  .settings(
+    name := """play-scala-hello-world-tutorial""",
+    organization := "com.example",
+    version := "1.0-SNAPSHOT",
+    scalaVersion := "2.13.1",
+    libraryDependencies ++= Seq(
+      guice,
+      "org.scalatestplus.play" %% "scalatestplus-play"    % "5.0.0" % Test,
+      "com.typesafe.play"      %% "play-slick"            % "5.0.0",
+      "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
+      "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+      "mysql"                   % "mysql-connector-java"  % "8.0.19",
+
+    ),
+    scalacOptions ++= Seq(
+      "-feature",
+      "-deprecation",
+      "-Xfatal-warnings"
+    )
+  )
+```
+
+
