@@ -22,6 +22,7 @@ Scala-Playframeworkの学習をするためのハンズオン資料を作成し�
 1. 作成するシステムを決める
 1. 外部キー制約やjoin
 1. DBのTimezone設定を日本時間に変更
+1. application.confのmysql接続情報は何を参照すればいいのか、後学のためにリンクなりを貼っておく
 
 ## memo
 

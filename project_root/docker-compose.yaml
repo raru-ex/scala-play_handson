@@ -27,7 +27,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       # TODO: システム名は検討
-      MYSQL_DATABASE: twitter
+      MYSQL_DATABASE: twitter_clone
     networks:
       - app-net
 

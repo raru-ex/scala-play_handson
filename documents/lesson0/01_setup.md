@@ -181,7 +181,7 @@ default-character-set=utf8mb4
     environment:
       MYSQL_ROOT_PASSWORD: root
       # Container内にデータベースを作成 TODO: システム名は検討
-      MYSQL_DATABASE: twitter
+      MYSQL_DATABASE: twitter_clone
     networks:
       - app-net
 ```
@@ -218,7 +218,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       # TODO: システム名は検討
-      MYSQL_DATABASE:      twitter
+      MYSQL_DATABASE:      twitter_clone
       # timezoneを設定
       TZ:                  Asia/Tokyo
     # play-scalaと同一ネットワーク上に置く
@@ -291,4 +291,107 @@ lazy val root = (project in file("."))
 
 ### slick-evolutionsの設定
 
+TODO: slick-evolutionsの説明
 
+#### DBへ接続するためにconfを設定
+
+slickを利用するにあたって、DBの接続情報などのいわゆる`config`を記載していきます。  
+playでは `conf/application.conf` が基本の設定ファイルになります。  
+今回はmysqlを利用するので以下のように設定を記載してください。  
+
+```
+# project_root/conf/application.conf
+slick.dbs {
+  default {
+
+    profile = "slick.jdbc.MySQLProfile$"
+    db {
+      driver   = com.mysql.cj.jdbc.Driver,
+      url      = "jdbc:mysql://db:3306/twitter_clone?useSSL=false",
+      user     = "root",
+      password = "root",
+    }
+  }
+}
+```
+
+##### 設定の補足
+
+`slick.dbs.{db_name}.db` というような構造になっており、`db_name`の部分は任意に設定可能です。  
+ここで設定した`db_name`がこのシステム内での対象DBの名称となります。  
+今回は慣習に倣い`default`としましたが`twitter_clone`や`master`, `slave`のようにすることも可能です。  
+
+`url`の中で`db:3306`という箇所がありますが、この`db`はネットワーク上でのhost名になります。  
+`docker-compose.yaml`でDB側のコンテナのコンテナ名を`db`としているので、そのコンテナ名で対象のサーバへアクセスをしています。
+
+#### Migration用のsqlを作成
+
+DBへの接続設定ができたので、次はDBに対して実行するSQLを用意します。  
+evolutionsではデフォルトで`conf/evolutions/{db_name}/{連番}.sql`というファイルを検索しにいくので、以下のような構造でフォルダ/ファイルを作成してください。  
+
+```sh
+conf
+└── evolutions
+    └── default
+        └── 1.sql
+```
+
+1.sqlは一旦以下のようにシンプルな形で記載して、動作を確認していきましょう。  
+
+```sql
+-- Tweet schema
+
+-- !Ups
+CREATE TABLE tweet (
+    id      bigint(20)    NOT NULL AUTO_INCREMENT,
+    content varchar(120)  NOT NULL,
+    -- created_at timestamp NOT NULL,
+    -- updated_at timestamp NOT NULL
+    PRIMARY KEY (id)
+);
+
+-- !Downs
+DROP TABLE tweet;
+```
+
+TODO: sqlの説明
+
+#### evolutionsを実行
+
+evolutionsでのマイグレーション実行をするために`play-scala`側のコンテナにアクセスし、サーバを起動してください。
+
+```sh
+$ docker-compose exec play-scala bash
+/source# sbt run
+```
+
+サーバが起動できたらブラウザからPlayへ[アクセス](http://localhost:9000)します。
+
+そうすると以下の画面が表示されると思います。  
+ここで`Apply this script now!`からevolutionsの実行を許可して、マイグレーションを走らせることができます。  
+実行をしてみたら、mysql側のコンテナへアクセスして動作を確認してみましょう。  
+
+```sh
+$ docker-compose exec db bash
+/# mysql -u root -proot
+mysql> use twitter_clone
+mysql> show tables; 
+# +-------------------------+
+# | Tables_in_twitter_clone |
+# +-------------------------+
+# | play_evolutions         |
+# | tweet                   |
+# +-------------------------+
+# 2 rows in set (0.01 sec)
+```
+
+このように`tweet`テーブルが作成されていたら、マイグレーションは成功です。  
+一緒に作成されている`play_evolutions`テーブルは、evolutions側でマイグレーションの実行状況を管理するためのテーブルになります。  
+特に気にしなくて大丈夫です。  
+
+
+
+
+## Tips
+
+- db名変更をした場合などは`docker/db/mysql_data/*`を削除してからコンテナの再起動をする
