@@ -123,6 +123,46 @@ docker
     └── mysql_data
 ```
 
+#### Dockerfileの設定
+
+`doker/db/Dockerfile` を編集していきます。  
+以下のようにファイルに記載してください。  
+
+```dockerfile
+# mysqlは5.7を使用
+FROM mysql:5.7
+
+# imageがdebianのため、apt-getで日本のlocaleを追加
+RUN apt-get update && \
+    apt-get install -y locales && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "ja_JP.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen ja_JP.UTF-8
+ENV LC_ALL ja_JP.UTF-8
+
+# docker/db/my.cnfをdockerイメージ上の/etc/...にコピーして配置
+COPY ./my.cnf /etc/mysql/conf.d/my.cnf
+```
+
+#### my.cnfを配置
+
+先ほどのtreeの設定と同様の箇所にmy.cnfファイルを配置します。  
+以下のようにファイルに記載してください。  
+
+```
+[mysqld]
+character_set_server=utf8mb4
+default_authentication_plugin=mysql_native_password
+collation-server=utf8mb4_bin
+
+[mysqldump]
+default-character-set=utf8mb4
+
+[mysql]
+default-character-set=utf8mb4
+```
+
+#### docker-composeにDBの設定を追記
 
 `docker-compose.yaml` にDBのService設定を追加します。  
 以下の設定をファイルに追加してください。  
@@ -179,6 +219,8 @@ services:
       MYSQL_ROOT_PASSWORD: root
       # TODO: システム名は検討
       MYSQL_DATABASE:      twitter
+      # timezoneを設定
+      TZ:                  Asia/Tokyo
     # play-scalaと同一ネットワーク上に置く
     networks:
       - app-net
@@ -206,7 +248,7 @@ play-scala   bash                          Up      0.0.0.0:9000->9000/tcp
 これでDockerの設定は完了です。  
 
 
-## Playframeworkの初期セットアップ
+## Playframeworkのセットアップ
 
 ### build.sbtに依存関係を追加
 
@@ -246,5 +288,7 @@ lazy val root = (project in file("."))
     )
   )
 ```
+
+### slick-evolutionsの設定
 
 
