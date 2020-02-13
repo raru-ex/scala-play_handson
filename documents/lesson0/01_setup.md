@@ -255,7 +255,8 @@ play-scala   bash                          Up      0.0.0.0:9000->9000/tcp
 今回はplay-slickやslick-codegenを利用して環境を作成していきます。  
 以下の依存関関係を`build.sbt`へ追加してください。  
 
-```scala
+```scala 
+evolutions,
 "com.typesafe.play"      %% "play-slick"            % "5.0.0",
 "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
 // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
@@ -274,6 +275,7 @@ lazy val root = (project in file("."))
     scalaVersion := "2.13.1",
     libraryDependencies ++= Seq(
       guice,
+      evolutions,
       "org.scalatestplus.play" %% "scalatestplus-play"    % "5.0.0" % Test,
       "com.typesafe.play"      %% "play-slick"            % "5.0.0",
       "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
