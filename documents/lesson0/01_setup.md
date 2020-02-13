@@ -368,6 +368,9 @@ $ docker-compose exec play-scala bash
 サーバが起動できたらブラウザからPlayへ[アクセス](http://localhost:9000)します。
 
 そうすると以下の画面が表示されると思います。  
+  
+![evolutions_execute_view](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/images/lesson0/evolutions_execute.png?raw=true)  
+
 ここで`Apply this script now!`からevolutionsの実行を許可して、マイグレーションを走らせることができます。  
 実行をしてみたら、mysql側のコンテナへアクセスして動作を確認してみましょう。  
 
