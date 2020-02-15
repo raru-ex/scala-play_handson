@@ -280,7 +280,8 @@ lazy val root = (project in file("."))
       "com.typesafe.play"      %% "play-slick"            % "5.0.0",
       "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
       "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
-      "mysql"                   % "mysql-connector-java"  % "8.0.19",
+      // https://scala-slick.org/doc/3.3.1/database.html
+      "mysql"                   % "mysql-connector-java"  % "6.0.6",
 
     ),
     scalacOptions ++= Seq(
@@ -395,7 +396,150 @@ mysql> show tables;
 特に気にしなくて大丈夫です。  
 
 
+### slick-codegenでslickのモデルを作成
 
+slick-codegeはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
+今回はsbt taskとして登録して手動実行できるように設定してきますが、sbtについては詳しく知らないため、設定方法のみ記述しますが詳細については割愛させていただきます。  
+
+#### sbt taskの作成
+
+まずは以下のコードを`build.sbt`へ追加します。  
+
+```scala
+// add code generation task
+lazy val slickCodeGen = taskKey[Unit]("execute Slick CodeGen")
+slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen").value
+```
+
+1行目で`slickCodeGen`という名前でコマンド(Task)を登録しています。  
+2行目ではそのタスク名に対して、特定のクラス処理を登録するようなことをしています。※ 詳細は理解できていません。
+
+ここでは`com.example.SlickCodeGen`というクラスを登録しています。  
+そのためこれから、この名前に一致するクラスを作成していきます。
+
+また`toTask()`に渡すときに、先頭にスペースを追加していますが、これがないと正常にファイルの呼び出しが行えませんので注意してください。理由は理解していません。  
+
+#### SlickCodeGenの実行ファイルを作成する
+
+それでは早速SlickCodeGenの実行ファイルを作成していきます。  
+今回は以下のファイルの追加/変更を行っていきます。
+- app/tasks/SlickCodeGen.scala
+- build.sbt
+- conf/application.conf
+
+```scala
+// -- app/tasks/SlickCodeGen.scala
+// Taskに登録したものと同様にpackageを指定
+package com.example
+
+import com.typesafe.config.ConfigFactory
+import slick.codegen.SourceCodeGenerator
+
+object SlickCodeGen extends App {
+  // typesafe configを利用してapplication.confをロード
+  val config      = ConfigFactory.load()
+  val defaultPath = "slick.dbs.default"
+
+  // 末尾の$を削除
+  val profile   = config.getString(s"$defaultPath.profile").dropRight(1)
+  val driver    = config.getString(s"$defaultPath.db.driver")
+  val url       = config.getString(s"$defaultPath.db.url")
+  val user      = config.getString(s"$defaultPath.db.user")
+  val password  = config.getString(s"$defaultPath.db.password")
+
+  // pathが別なので直接呼び出し
+  val outputDir = config.getString("slick.codegen.outputDir")
+  val pkg       = config.getString("application.package")
+
+  // slick-codegenを実行
+  SourceCodeGenerator.main(
+    Array(profile, driver, url, outputDir, pkg, user, password)
+  )
+}
+```
+
+ここで`TypesafeConfig`というライブラリを利用しています。  
+これは外部のライブラリになるため`build.sbt`へ依存関係を追加します。  
+
+```scala
+// -- build.sbt
+"com.typesafe" % "config" % "1.4.0"
+```
+
+依存関係を追加したら、新しく追加した設定を読み込めるように`application.conf`へ追記をしていきます。
+
+```
+slick {
+  dbs {
+    default {
+      profile = "slick.jdbc.MySQLProfile$"
+
+      db {
+        driver   = com.mysql.cj.jdbc.Driver,
+        url      = "jdbc:mysql://db:3306/twitter_clone?useSSL=false",
+        user     = "root",
+        password = "root",
+      }
+    }
+  }
+  codegen {
+    # ここでの.はroot directoryとなる
+    outputDir = "./output/codegen"
+  }
+}
+
+application {
+  package = "com.example"
+}
+```
+slick部分の構造が少し変更されているので気をつけてください。  
+
+##### 補足
+
+通常のplayでの実装ではControllerへのDIからconfigを利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムになるのでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
+
+
+#### SlickCodeGen Taskの実行
+
+ファイルの修正ができたら、早速コマンドの実行をしてみましょう。  
+
+```sh
+$ docker-compose exec play-scala bash
+/source# sbt slickCodeGen
+```
+
+コマンドの実行に成功すると以下のように`Tables.scala`ファイルが作成されます。  
+
+```sh
+output
+└── codegen
+    └── com
+        └── example
+            └── Tables.scala
+```
+
+今回はevolutionsのテーブルも対象に取られているため、かなり`うわっ...`となるファイルになっていると思いますが、Tweet部分に限れば以下のようになっています。   
+
+```scala
+  implicit def GetResultTweetRow(implicit e0: GR[Long], e1: GR[String]): GR[TweetRow] = GR{
+    prs => import prs._
+    TweetRow.tupled((<<[Long], <<[String]))
+  }
+
+  class Tweet(_tableTag: Tag) extends profile.api.Table[TweetRow](_tableTag, Some("twitter_clone"), "tweet") {
+    def * = (id, content) <> (TweetRow.tupled, TweetRow.unapply)
+    def ? = ((Rep.Some(id), Rep.Some(content))).shaped.<>({r=>import r._; _1.map(_=> TweetRow.tupled((_1.get, _2.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    val content: Rep[String] = column[String]("content", O.Length(120,varying=true))
+  }
+
+  lazy val Tweet = new TableQuery(tag => new Tweet(tag))
+```
+
+`Slick`は詳細を理解しようとすると大変なのでここでは詳細は省きますが、これでSlickからTweetテーブルを操作するために必要なコードが用意できました。  
+このファイルを自力で実装するのはミスも発生して大変なので、特に慣れないうちはcodegenから生成するのが良いと思います。  
+  
 
 ## Tips
 

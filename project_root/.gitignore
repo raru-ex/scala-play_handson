@@ -23,7 +23,11 @@ generated.truststore
 .settings/
 .cache-main
 .cache-tests
+.metals
+.bloop
+project/metals.sbt
 
 # docker
 /docker/db/mysql_data
 !/docker/db/mysql_data/.gitkeep
+

@@ -23,6 +23,9 @@ Scala-Playframeworkの学習をするためのハンズオン資料を作成し�
 1. 外部キー制約やjoin
 1. DBのTimezone設定を日本時間に変更
 1. application.confのmysql接続情報は何を参照すればいいのか、後学のためにリンクなりを貼っておく
+1. sbtのtask設定を理解して説明を追加する
+1. slick codegenで日付関係対応
+1. mysqlの日付系のimplicit実装
 
 ## memo
 
