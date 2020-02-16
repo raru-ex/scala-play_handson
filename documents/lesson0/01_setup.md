@@ -334,7 +334,8 @@ lazy val root = (project in file("."))
       "com.typesafe.play"      %% "play-slick"            % "5.0.0",
       "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
       "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
-      // https://scala-slick.org/doc/3.3.1/database.html
+      // 3.3.2のドキュメントがまだ存在しない
+      // https://scala-slick.org/doc/3.3.1/database.html 
       "mysql"                   % "mysql-connector-java"  % "6.0.6",
 
     ),
