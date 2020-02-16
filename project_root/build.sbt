@@ -26,4 +26,4 @@ lazy val root = (project in file("."))
 
 // add code generation task
 lazy val slickCodeGen = taskKey[Unit]("execute Slick CodeGen")
-slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen").value
+slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCodeGen").value
