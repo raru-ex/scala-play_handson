@@ -88,7 +88,7 @@ Skinny Frameworkは私がScalaで初めて利用していたフレームワー�
 - Vim or Emacs & metals
 
 正直なところ、IDEについてはほぼほぼIntellij IDEAで統一されている印象です。  
-Community EditionでもScala Pluginを導入すれば、個人で開発する範囲であればあまり不自由なく開発が行えるかと思います。  
+Community EditionでもScala Pluginを導入すれば、個人で開発する範囲であればあまり不自由なく開発が行えると思います。  
 
 他の選択肢として、最近はMetalsというScala向けのLanguage Serverの開発が進んでおり、LSPを利用した連携機能を持つエディタであればかなり快適に開発を行うことも可能です。  
 事実は私は個人ではVimとMetalsを利用して開発を行っています。  
@@ -98,6 +98,8 @@ Community EditionでもScala Pluginを導入すれば、個人で開発する範
 
 <a id="markdown-ハンズオン" name="ハンズオン"></a>
 # ハンズオン
+
+本ハンズオンでは現在(2020年02月)時点で最新である、Playの2.8を利用してハンズオンを進めていきます。  
 
 <a id="markdown-前提" name="前提"></a>
 ## 前提
