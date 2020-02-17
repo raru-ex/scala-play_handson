@@ -57,7 +57,8 @@ Mac:     [Download](https://docs.docker.com/docker-for-mac/install/)
 
 <a id="markdown-playframeworkの初期プロジェクトのダウンロード" name="playframeworkの初期プロジェクトのダウンロード"></a>
 ### Playframeworkの初期プロジェクトのダウンロード
-sbtコマンドでのセットアップも可能ですが、sbtがインストールされてないケースもあるため今回はLightbend社のサイトからダウンロードを行ってください。  
+sbtコマンドでのセットアップも可能です。
+しかしsbtがインストールされてないケースもあるため、今回はLightbend社のサイトからダウンロードを行ってください。  
 [Download](https://developer.lightbend.com/start/?group=play&project=play-samples-play-scala-hello-world-tutorial)  
 
 <a id="markdown-プロジェクトの配置" name="プロジェクトの配置"></a>
@@ -75,13 +76,13 @@ project_root直下にdocker-compose.yamlファイルを作成
 version: '3'
 # dockerで利用したい各コンテナ(service)をまとめる要素
 services:
-  # play-scalaという名前をつけて、Serviceを設定。このコンテナはplayを動作させるためのコンテナになります。
+  # play-scalaという名前をつけて、Serviceを設定。このコンテナはplayを動作させるためのコンテナになります
   play-scala:
     # 利用するimageを指定。今回はjava8系で動作するsbtの最新imageを指定しています
     image: hseeberger/scala-sbt:8u242_1.3.8_2.13.1
     # 特にこだわりはないので、service名とcontainer名を同じにしています。
     container_name: play-scala
-    # playのデフォルト利用ポートが9000番なので9000を指定。hostからも9000でアクセスできるように設定しています。
+    # playのデフォルト利用ポートが9000番なので9000を指定。hostからも9000でアクセスできるように設定しています
     ports:
       - "9000:9000"
     # 初回起動時にキャッシュされる依存ライブラリ群をキャッシュするためにvolumesに指定
@@ -120,10 +121,10 @@ $ docker-compose ps
 
 ```
 
-コンテナの起動ができたら、実際にplayを起動してみましょう  
+コンテナの起動ができたら、実際にplayを起動してみましょう。  
 
 ```sh
-# play-scalaのコンテナにはbashが入っているので、bashコンソールでアクセスします。
+# play-scalaのコンテナにはbashが入っているので、bashコンソールでアクセスします
 # imageによってはbashが入っていないことがあるので、その時には sh などで試してみましょう
 $ docker-compose exec play-scala bash
 
@@ -149,7 +150,7 @@ root@8f6b2156168d:/source# sbt
 Playが起動したらhost側のブラウザから以下のurlからサーバにアクセスしてみましょう。  
 [http://localhost:9000](http://localhost:9000)  
 
-以下の画面が表示されれば起動は成功です  
+以下の画面が表示されれば起動は成功です。  
 ![play hello world](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/images/documents/images/lesson0/play%E8%B5%B7%E5%8B%95.png?raw=true&s=750)  
 
 <a id="markdown-dbのセットアップ" name="dbのセットアップ"></a>
@@ -238,7 +239,7 @@ default-character-set=utf8mb4
       - app-net
 ```
 
-最終的に以下のようになっていればOKです
+最終的に以下のようになっていればOKです。
 
 ```yaml
 version: '3'
@@ -337,7 +338,6 @@ lazy val root = (project in file("."))
       // 3.3.2のドキュメントがまだ存在しない
       // https://scala-slick.org/doc/3.3.1/database.html 
       "mysql"                   % "mysql-connector-java"  % "6.0.6",
-
     ),
     scalacOptions ++= Seq(
       "-feature",
@@ -616,7 +616,7 @@ slick-codegenではTimestampやDatetimeを`java.sql.Timestamp`にMappingして�
 #### evolutionsのsqlに日付データを追加
 
 まずは`conf/evolutions/default/1.sql`を修正してきます。  
-日付関連のデータを持っていなかったので、よくある日付型カラムを追加していきましょう  
+日付関連のデータを持っていなかったので、よくある日付型カラムを追加していきましょう。  
 
 ```sql
 -- Tweet schema
