@@ -20,9 +20,9 @@
 <a id="markdown-lesson1" name="lesson1"></a>
 # Lesson1
 
-まずはPlayframeworkをシンプルな状態のまま利用して、Playframeworkに慣れていきましょう。  
-  
 Lesson1ではPlayを利用して、簡単なCRUDを作成していきます。  
+
+まずはPlayframeworkをシンプルな状態のまま利用して、Playframeworkに慣れていきましょう。  
   
 またScala-Playで開発を行うにあたり、必要となる基本的な知識・言葉についても簡単にではありますが補足させていただきます。  
   
@@ -41,9 +41,9 @@ JavaでいうところのAnt, Mavenにあたります。
 ライブラリの依存関係の解決や、デプロイのためのパッケージング、インクリメンタルなテストやコンパイルの実行などができます。  
 この後利用しますが、他にもシードからのプロジェクト生成などを行うことなども可能です。  
 
-scalacコマンドなどを利用してscalaプログラムの実行を行うこともできますが、一般的にはsbtを利用してその上でScalaを利用することが多いと思われます。  
+scalacコマンドなどを利用してscalaプログラムの実行を行うこともできますが、一般的にはsbtを利用してその上でScalaを利用することが多いと思います。  
 
-参照: [sbt:Wikipedia](https://ja.wikipedia.org/wiki/Sbt)
+参照: [Wikipedia](https://ja.wikipedia.org/wiki/Sbt)
 
 <a id="markdown-playframeworkとは" name="playframeworkとは"></a>
 ## Playframeworkとは
@@ -51,13 +51,13 @@ scalacコマンドなどを利用してscalaプログラムの実行を行うこ
 元々はJava向けのWebフレームワーク。  
 2010年11月にリリースされたPlay 1.1からはScalaをサポートしており、現在広く利用されているフレームワークの一つです。  
 
-MVCアーキテクチャに親和性が高く、Web Applicationに必要な機能であれば一通り網羅されています。  
-ScalaでのWeb開発では、利用率が高く参考情報も豊富なため今回のハンズオンに採用しています。  
-ちなみにPlay2.3のころからAkkaを統合しています。  
+MVCアーキテクチャに親和性が高く、Web Applicationに必要な一通りの機能が網羅されています。  
+ScalaでのWeb開発では利用率が高く、参考情報も豊富なため今回のハンズオンに採用しています。  
+ちなみにPlay2.3のころから後述のAkkaを統合しています。  
 
-[参照]
-[Play Framework](https://ja.wikipedia.org/wiki/Play_Framework)
-[JetBrains: どのフレームワーク / ライブラリをウェブ開発に定期的に使用していますか？](https://www.jetbrains.com/ja-jp/lp/devecosystem-2019/scala/)
+[参照]  
+[Play Framework](https://ja.wikipedia.org/wiki/Play_Framework)  
+[JetBrains: どのフレームワーク / ライブラリをウェブ開発に定期的に使用していますか？](https://www.jetbrains.com/ja-jp/lp/devecosystem-2019/scala/)  
 
 <a id="markdown-他のscala-web-framework" name="他のscala-web-framework"></a>
 ### 他のScala WEB Framework
@@ -77,7 +77,8 @@ ScalaでのWeb開発では、利用率が高く参考情報も豊富なため今
   - Akka httpが一番よく聞く。Http関連のモジュール
   - Actor modelを採用している -> [Wikipedia](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%82%AF%E3%82%BF%E3%83%BC%E3%83%A2%E3%83%87%E3%83%AB)
 
-Skinny Frameworkは私がScala学習で始めて利用していたフレームワークのため、個人的に思い入れが深いです。  
+Skinny Frameworkは私がScalaで初めて利用していたフレームワークのため、個人的な思い入れが深いです。  
+(実はLiftというフレームワークを10年くらい前に利用したことがありますが...)
 
 <a id="markdown-オススメの開発エディタ" name="オススメの開発エディタ"></a>
 ## オススメの開発エディタ
@@ -86,13 +87,13 @@ Skinny Frameworkは私がScala学習で始めて利用していたフレーム�
 - Visual Studio Code & metals
 - Vim or Emacs & metals
 
-正直なところですが、IDEについてはほぼほぼIntellij IDEAで統一されている印象です。  
+正直なところ、IDEについてはほぼほぼIntellij IDEAで統一されている印象です。  
 Community EditionでもScala Pluginを導入すれば、個人で開発する範囲であればあまり不自由なく開発が行えるかと思います。  
 
-また最近はMetalsというScala向けのLanguage Serverの開発が進んでおり、LSPを利用した連携機能を持つエディタであればかなり快適に開発を行うことも可能です。  
+他の選択肢として、最近はMetalsというScala向けのLanguage Serverの開発が進んでおり、LSPを利用した連携機能を持つエディタであればかなり快適に開発を行うことも可能です。  
 事実は私は個人ではVimとMetalsを利用して開発を行っています。  
 
-個人的には強いこだわりがない限りは`IntelliJ IDEA`をオススメします。  
+個人的には、強いこだわりがない限りは`IntelliJ IDEA`の利用をオススメします。  
 
 
 <a id="markdown-ハンズオン" name="ハンズオン"></a>
