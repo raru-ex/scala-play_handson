@@ -1,5 +1,5 @@
-<a id="markdown-lesson-0" name="lesson-0"></a>
-# Lesson 0
+<a id="markdown-lesson-2" name="lesson-2"></a>
+# Lesson 2
 
 ハンズオンで開発を行うための環境をセットアップします。  
 本リポジトリをCloneして利用する際には、このLessonは不要です。  
@@ -10,7 +10,7 @@
 
 <!-- TOC -->
 
-- [Lesson 0](#lesson-0)
+- [Lesson 2](#lesson-2)
 - [目次](#目次)
     - [Playframeworkの実行環境のセットアップ](#playframeworkの実行環境のセットアップ)
         - [Dockerのインストール](#dockerのインストール)
