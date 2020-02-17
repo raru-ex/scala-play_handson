@@ -151,7 +151,7 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 [http://localhost:9000](http://localhost:9000)  
 
 以下の画面が表示されれば起動は成功です。  
-![play hello world](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/images/documents/images/lesson0/play%E8%B5%B7%E5%8B%95.png?raw=true&s=750)  
+![play hello world](https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson2/play%E8%B5%B7%E5%8B%95.png)  
 
 <a id="markdown-dbのセットアップ" name="dbのセットアップ"></a>
 ## DBのセットアップ
@@ -432,7 +432,7 @@ $ docker-compose exec play-scala bash
 
 そうすると以下の画面が表示されると思います。  
   
-![evolutions_execute_view](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/images/lesson0/evolutions_execute.png?raw=true)  
+![evolutions_execute_view](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/images/lesson2/evolutions_execute.png?raw=tru)  
 
 ここで`Apply this script now!`からevolutionsの実行を許可して、マイグレーションを走らせることができます。  
 実行をしてみたら、mysql側のコンテナへアクセスして動作を確認してみましょう。  
