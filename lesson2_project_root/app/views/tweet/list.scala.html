@@ -5,7 +5,7 @@
 @main("tweet list") {
   <ul>
   @for(tweet <- tweets) {
-    <li>@tweet.content</li>
+    <li>@tweet.content @tweet.postedAt</li>
   }
   </ul>
 }

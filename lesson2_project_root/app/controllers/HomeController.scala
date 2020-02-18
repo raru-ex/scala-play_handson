@@ -31,7 +31,7 @@ with HasDatabaseConfigProvider[JdbcProfile] {
     for (
       tweets <-  db.run(TweetTable.TweetQuery.sortBy(_.id.desc).result)
     ) yield {
-    Ok(views.html.tweet.list(tweets))
+      Ok(views.html.tweet.list(tweets))
     }
   }
 
