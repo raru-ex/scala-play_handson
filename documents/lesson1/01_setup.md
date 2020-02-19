@@ -11,9 +11,16 @@
         - [他のScala WEB Framework](#他のscala-web-framework)
     - [オススメの開発エディタ](#オススメの開発エディタ)
 - [ハンズオン](#ハンズオン)
-    - [前提](#前提)
+    - [注意事項](#注意事項)
     - [推奨環境](#推奨環境)
     - [Playの導入](#playの導入)
+    - [統合開発環境(IntelliJ IDEA)のセットアップ](#統合開発環境intellij-ideaのセットアップ)
+        - [IDEAのダウンロード](#ideaのダウンロード)
+        - [IDEAへのプロジェクトの取り込み](#ideaへのプロジェクトの取り込み)
+    - [一覧ページ作成](#一覧ページ作成)
+    - [詳細ページ作成](#詳細ページ作成)
+    - [登録・更新ページ作成](#登録・更新ページ作成)
+    - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
 
 <!-- /TOC -->
 
@@ -77,8 +84,6 @@ ScalaでのWeb開発では利用率が高く、参考情報も豊富なため今
   - Akka httpが一番よく聞く。Http関連のモジュール
   - Actor modelを採用している -> [Wikipedia](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%82%AF%E3%82%BF%E3%83%BC%E3%83%A2%E3%83%87%E3%83%AB)
 
-Skinny Frameworkは私がScalaで初めて利用していたフレームワークのため、個人的な思い入れが深いです。  
-(実はLiftというフレームワークを10年くらい前に利用したことがありますが...)
 
 <a id="markdown-オススメの開発エディタ" name="オススメの開発エディタ"></a>
 ## オススメの開発エディタ
@@ -101,17 +106,18 @@ Community EditionでもScala Pluginを導入すれば、個人で開発する範
 
 本ハンズオンでは現在(2020年02月)時点で最新である、Playの2.8を利用してハンズオンを進めていきます。  
 
-<a id="markdown-前提" name="前提"></a>
-## 前提
+<a id="markdown-注意事項" name="注意事項"></a>
+## 注意事項
 
 本ハンズオンは以下を前提として構築されています。  
-前提となっているツールがインストールされていない場合には、各自の環境に合わせてインストールを行ってください。  
+前提となっている環境と差異がある方は、各々読みかえていただいたり各環境ごとに適切にセットアップを行ってください。  
 
-- マシンにsbtがインストールされている
+1. マシンにsbtがインストールされている
+2. Mac OSのパソコンを利用している
 
-[Windows](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Windows.html)
-[Mac](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Mac.html)
-[Linux](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Linux.html)
+[sbt インストール方法 Windowsの場合](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Windows.html)  
+[sbt インストール方法 Macの場合](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Mac.html)  
+[sbt インストール方法 Linuxの場合](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Linux.html)
 
 <a id="markdown-推奨環境" name="推奨環境"></a>
 ## 推奨環境
@@ -144,7 +150,7 @@ name部分でプロジェクト名を指定しています。
 organizationは個人のドメインをお持ちの方は、その逆順で記載しても良いです。  
 今回はサンプルのため`com.example`を指定しています。  
 
-これでコマンドを実行したフォルダ以下に`name`で指定したプロジェクト名のフォルダが作成されています。  
+これでコマンドを実行したフォルダ以下に`name`で指定したプロジェクト名のフォルダが作成されます。  
 
 ```sh
 $ tree  -L 2 | pbcopy
@@ -159,4 +165,103 @@ $ tree  -L 2 | pbcopy
     └── test
 ```
 
+`sbt new`が完了したら、ローカルでサーバを起動して動作を確認してみましょう。  
 
+```sh
+$ cd {your_project_root}
+$ sbt run
+
+# .... 以下の表示がでたらサーバが起動しています。
+# --- (Running the application, auto-reloading is enabled) ---
+# 
+# [info] p.c.s.AkkaHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:9000
+# 
+# (Server started, use Enter to stop and go back to the console...)
+```
+
+サーバが起動したら、ブラウザからアクセスをしてみましょう。  
+[http://localhost:9000](http://localhost:9000)
+
+以下の画面が表示されていればOKです。  
+
+TODO: 01
+
+導入自体はこれで完了になります。  
+Scalaは環境も整備されてきており、誰でも比較的簡単に始めることができる環境が整ってきているのではないでしょうか。  
+
+<a id="markdown-統合開発環境intellij-ideaのセットアップ" name="統合開発環境intellij-ideaのセットアップ"></a>
+## 統合開発環境(IntelliJ IDEA)のセットアップ
+
+今回はIntelliJ IDEAの無償版を利用したセットアップの手順を記載していきます。  
+Vimについては自己責任で出来る人しかいないと思うので、割愛します。  
+Visual Studio Codeについては、個人的にmetalsのフルパワーがみてみたいので命尽きる前のいつの日にか手順を作ってみたいと思っております。  
+
+
+<a id="markdown-ideaのダウンロード" name="ideaのダウンロード"></a>
+### IDEAのダウンロード
+
+[こちらのサイト](https://www.jetbrains.com/ja-jp/idea/)からIDEAのダウンロードリンクを押下してください。  
+
+TODO: 02
+
+各々OSに合わせたダウンロードページへ遷移します。(たぶん)  
+ダウンロードページに遷移したら、以下のボタンから無償版のIDEAをダウンロードします。  
+
+TODO: 03
+
+IDEAをインストールできたら、IDEAを起動して次のステップへ進んでください。  
+
+<a id="markdown-ideaへのプロジェクトの取り込み" name="ideaへのプロジェクトの取り込み"></a>
+### IDEAへのプロジェクトの取り込み
+
+まず、IDEAを起動したら`Open`からプロジェクトを開いていきましょう。  
+
+TODO: 4
+
+ファインダーから選択するときには、対象のプロジェクトを反転させてから`Open`で問題ありません。  
+
+TODO: 5
+
+次にIDEAのテーマを選択します。  
+ここはお好みのテーマを選択してください。  
+
+TODO: 6
+
+次のステップでは`shell`からIDEAを起動するためにPATHを通すか選択する画面になります。  
+ここもご自身で自由に設定いただいて問題ありません。  
+
+TODO: 7
+
+次は好みの設定があるようでしたら変更いただいても問題ありませんが、基本的にはそのままで大丈夫です。  
+
+TODO: 8
+
+この画面では印がしていあるように、Scalaのインストールだけは必須で行ってください。  
+他のものについては任意です。  
+
+TODO: 9
+
+これでIDEAが起動して、プロジェクトが読み込まれます。  
+起動が完了したら試しに`app/controllers/HomeController.scala`のファイルを開いてみましょう。  
+
+ソースコード上で、21行目の`Action`に`Cmd`キーを押しながらカーソルを移動してみてください。  
+マウスが当たったときにカーソルが指マークに変わったら、クリックをしてみてください。  
+Actionの実装に飛ぶことができれば設定は正常にされている状態になっていると思います。  
+
+うまく動作しないというときは、JDKのインストールとScalaの設定ができていないときがあります。  
+そのときは声をかけてください。  
+※ Scalaはプロジェクト内にインストールされるのでマシン自体にインストールする必要はありません。(してもいいです)  
+
+これでIDEAの設定は完了になります。  
+
+<a id="markdown-一覧ページ作成" name="一覧ページ作成"></a>
+## 一覧ページ作成
+
+<a id="markdown-詳細ページ作成" name="詳細ページ作成"></a>
+## 詳細ページ作成
+
+<a id="markdown-登録・更新ページ作成" name="登録・更新ページ作成"></a>
+## 登録・更新ページ作成
+
+<a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
+## Twirlの共通コンポーネント作成
