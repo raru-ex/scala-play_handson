@@ -187,7 +187,7 @@ $ sbt run
 
 以下の画面が表示されていればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/01_play_hello_world.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/01_play_hello_world.png" width="450">
 
 導入自体はこれで完了になります。  
 Scalaは環境も整備されてきており、誰でも比較的簡単に始めることができる環境が整ってきているのではないでしょうか。  
@@ -205,12 +205,12 @@ Visual Studio Codeについては、個人的にmetalsのフルパワーがみ�
 
 [こちらのサイト](https://www.jetbrains.com/ja-jp/idea/)からIDEAのダウンロードリンクを押下してください。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/02_JetBrains_top.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/02_JetBrains_top.png" width="450">
 
 各々OSに合わせたダウンロードページへ遷移します。(たぶん)  
 ダウンロードページに遷移したら、以下のボタンから無償版のIDEAをダウンロードします。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/03_JetBrains_download_page.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/03_JetBrains_download_page.png" width="450">
 
 IDEAをインストールできたら、IDEAを起動して次のステップへ進んでください。  
 
@@ -219,35 +219,35 @@ IDEAをインストールできたら、IDEAを起動して次のステップへ
 
 まず、IDEAを起動したら`Open`からプロジェクトを開いていきましょう。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/04_IntelliJ_top.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/04_IntelliJ_top.png" width="450">
 
 ファインダーから選択するときには、対象のプロジェクトを反転させてから`Open`で問題ありません。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/05_chose_project.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/05_chose_project.png" width="450">
 
 次にIDEAのテーマを選択します。  
 ここはお好みのテーマを選択してください。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/06_select_view_mode.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/06_select_view_mode.png" width="450">
 
 次のステップでは`shell`からIDEAを起動するためにPATHを通すか選択する画面になります。  
 ここもご自身で自由に設定いただいて問題ありません。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/07_select_bin_setting.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/07_select_bin_setting.png" width="450">
 
 次は好みの設定があるようでしたら変更いただいても問題ありませんが、基本的にはそのままで大丈夫です。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/08_setting1.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/08_setting1.png" width="450">
 
 この画面では印がしていあるように、Scalaのインストールだけは必須で行ってください。  
 他のものについては任意です。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/09_install_scala.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/09_install_scala.png" width="450">
 
 これでIDEAが起動して、プロジェクトが読み込まれます。  
 またそのときに下の画像のようなポップアップが表示されたら`Import Changes`を選択しましょう。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/10_import_sbt.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/10_import_sbt.png" width="450">
 
 sbtに変更が加わったときなどに表示されます。これをしないとsbt関連の変更が適用されないのでご注意ください。  
   
@@ -256,7 +256,7 @@ sbtに変更が加わったときなどに表示されます。これをしな�
 
 では、起動が完了したら試しに`app/controllers/HomeController.scala`のファイルを開いてみましょう。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/11_open_homecontroller.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/11_open_homecontroller.png" width="450">
 
 ソースコード上で、21行目の`Action`に`Cmd`キーを押しながらカーソルを移動してみてください。  
 マウスが当たったときにカーソルが指マークに変わるとおもいます。  
@@ -373,7 +373,7 @@ Twirlのファイルは`views/`直下に配置されており、拡張子が`.sc
 ここまで出来たら、一度ページへアクセスして動作を確認してみましょう。 
 以下のような画面が表示されればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/12_list_page_part1.png" witdh="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/12_list_page_part1.png" width="450">
 
 
 
