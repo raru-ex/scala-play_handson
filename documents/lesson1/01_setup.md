@@ -18,6 +18,9 @@
         - [IDEAのダウンロード](#ideaのダウンロード)
         - [IDEAへのプロジェクトの取り込み](#ideaへのプロジェクトの取り込み)
     - [一覧ページ作成](#一覧ページ作成)
+        - [ルーティング](#ルーティング)
+        - [Controllerの作成](#controllerの作成)
+        - [画面の作成](#画面の作成)
     - [詳細ページ作成](#詳細ページ作成)
     - [登録・更新ページ作成](#登録・更新ページ作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
@@ -265,9 +268,114 @@ Actionの実装に飛ぶことができれば設定は正常にされている�
 
 これでIDEAの設定は完了になります。  
 
-
 <a id="markdown-一覧ページ作成" name="一覧ページ作成"></a>
 ## 一覧ページ作成
+
+それではPlayの機能を触りながら、簡単に一覧ページから作成していきましょう。  
+今回はPlayに集中するためDBへのアクセスは行わずに作成してみようと思います。  
+
+<a id="markdown-ルーティング" name="ルーティング"></a>
+### ルーティング
+
+まずはリクエストに対する処理の設定をみていきます。  
+Playでは`conf/routes`のファイルでルーティングを管理しています。  
+今の状態の`conf/routes`ファイルを開いてみると以下のようになっていると思います。  
+
+```
+# ... 一部抜粋
+# An example controller showing a sample home page
+GET     /                           controllers.HomeController.index
+```
+
+これは`GET`Methodの`/`へのリクエストに対して`controllers.HomeController.index`を設定すると言うことになります。  
+この設定のおかげで、Playは`http://localhost:9000`、つまりルート(`/`)に対して`HomeController`の`index`アクションを実行するということを理解できるようになります。  
+
+今回は一覧表示機能を作成したいので、以下のようにルーティングを設定してみましょう。  
+
+```
+GET     /tweet/list                 controllers.tweet.TweetController.list
+```
+今回は意図的に`tweet`というパッケージを間に挟んでいます。  
+その場合にどうなるのか、スッとイメージができたりできなかったりすることがあるので参考として追加しているため特別な意味はありません。  
+
+次は設定したルーティングに必要なコントローラーを作成してきましょう。   
+
+<a id="markdown-controllerの作成" name="controllerの作成"></a>
+### Controllerの作成
+
+Playでは基本的にはControllerでリクエストに対しての処理を受け取ります。  
+Controller内にあるリクエストに対するメソッドは一般的に`Action`と呼ばれます。(他のプログラミング言語、フレームワークでも同様です)
+
+ここでは`TweetController.scala`を作成して、その中で`list`アクションを作成していきます。  
+
+`app/controller/tweet/TweetController.scala`
+```scala
+package controllers.tweet
+
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.ControllerComponents
+import play.api.mvc.BaseController
+import play.api.mvc.Request
+import play.api.mvc.AnyContent
+
+/**
+  * @SingletonでPlayFrameworkの管理下でSingletonオブジェクトとして本クラスを扱う指定をする
+  * @Injectでconstructorの引数をDIする
+  * BaseControllerにはprotected の controllerComponentsが存在するため、そこに代入されている。
+  * controllerComponentsがActionメソッドを持つため、Actionがコールできる
+  *   ActionはcontrollerComponents.actionBuilderと同じ
+  */
+@Singleton
+class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+
+  def list() =  Action { implicit request: Request[AnyContent] =>
+    // Ok()はステータスコードが200な、Resultをreturnします。
+    // つまり正常系としてviews.html.tweet.listのコンテンツを返すということになります。
+    Ok(views.html.tweet.list())
+  }
+}
+```
+
+これで`http://localhost:9000/list`のリクエストに対してのアクションを作成できました。  
+ただまだこれではエラーが出ていると思います。  
+それはこのリクエストに対するレスポンスに指定している`views.html.tweet.list`のファイルが存在しないからです。  
+
+次は一覧画面のためのhtmlを作成していきましょう。  
+
+<a id="markdown-画面の作成" name="画面の作成"></a>
+### 画面の作成
+
+Playではデフォルトでは`Twirl`というテンプレートエンジンを利用して画面を作成します。  
+Twirlのファイルは`views/`直下に配置されており、拡張子が`.scala.html`となっています。  
+今回は`views/tweet/list.scala.html`を作成していきます。  
+
+このフォルダ構成が先ほどの`Ok(views.html.tweet.list())`の指定とマッピングされています。  
+以下のようなイメージですね。  
+`views.html`   => `views/`  
+`tweet.list()` => `tweet/list.scala.html`  
+
+では、ファイルを作成して、まずは以下のように中身を実装していきましょう。  
+
+```html
+@* これはTwirlのコメントです。
+以下はview templeteでの引数を受け取る記載です。
+今回は引数が不要のため @() となっています。
+*@
+@()
+
+@main("一覧画面") {
+  <h1>一覧画面です</h1>
+}
+```
+
+@mainの部分については後ほど説明をしますので、今は「h1の表示を出すんだな」くらいの理解で問題ありません。  
+
+ここまで出来たら、一度ページへアクセスして動作を確認してみましょう。 
+以下のような画面が表示されればOKです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/12_list_page_part1.png" witdh="450">
+
+
 
 <a id="markdown-詳細ページ作成" name="詳細ページ作成"></a>
 ## 詳細ページ作成
