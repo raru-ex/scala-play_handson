@@ -21,6 +21,10 @@
         - [ルーティング](#ルーティング)
         - [Controllerの作成](#controllerの作成)
         - [画面の作成](#画面の作成)
+        - [モデルの作成とリスト表示](#モデルの作成とリスト表示)
+            - [モデルの作成](#モデルの作成)
+            - [モデルをViewへ渡す](#モデルをviewへ渡す)
+            - [Viewでモデルを受け取り表示](#viewでモデルを受け取り表示)
     - [詳細ページ作成](#詳細ページ作成)
     - [登録・更新ページ作成](#登録・更新ページ作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
@@ -376,6 +380,92 @@ Twirlのファイルは`views/`直下に配置されており、拡張子が`.sc
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/12_list_page_part1.png" width="450">
 
 
+<a id="markdown-モデルの作成とリスト表示" name="モデルの作成とリスト表示"></a>
+### モデルの作成とリスト表示
+
+単純なページ表示は行えたので、次はモデルを作成してそのモデルを一覧表示してみます。  
+
+<a id="markdown-モデルの作成" name="モデルの作成"></a>
+#### モデルの作成
+
+今回利用する`app/models/Tweet.scala`を作成してきましょう。  
+
+```scala
+package models
+
+// case classについての説明は省略
+// 参考: https://docs.scala-lang.org/ja/tour/case-classes.html
+case class Tweet(
+  id:      Option[Long],
+  content: String
+)
+```
+
+今のところは非常にシンプルなクラスになりました。  
+`case class`についての説明は省略しますが、非常に雑に説明すると`toString`, `equals`がいい感じに実装されていたり`apply`や`unapply`メソッドなどが実装されている便利なClassです。  
+
+<a id="markdown-モデルをviewへ渡す" name="モデルをviewへ渡す"></a>
+#### モデルをViewへ渡す
+
+先ほど作成したモデルをコントローラからViewへ渡してみましょう。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+// ... 省略
+def list() =  Action { implicit request: Request[AnyContent] =>
+  // 1から10までのTweetクラスのインタンスを作成しています。
+  // 1 to 10だとIntになってしまうの1L to 10LでLongにしています。
+  val tweets: Seq[Tweet] = (1L until 10).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
+
+  // viewの引数としてtweetsを渡します。
+  Ok(views.html.tweet.list(tweets))
+}
+```
+
+今回はDBを利用しないので、Controller側に決め打ちで実装しています。  
+`views.html.tweet.list()`に引数としてtweetsを渡すところまではできました。  
+次はView側で引き渡されたTweetを受け取って表示をしてみます。  
+
+<a id="markdown-viewでモデルを受け取り表示" name="viewでモデルを受け取り表示"></a>
+#### Viewでモデルを受け取り表示
+
+早速コードを修正していきましょう。  
+
+`views/tweet/list.scala.html`
+```html
+@* Twirl側でもクラスを正しく認識するためにscalaファイルと同様にimportが必要です。  *@
+@import models.Tweet
+
+@*
+以下はview templeteでの引数を受け取る記載です。
+今回はTweetの一覧を取得するため@(tweets: Seq[Tweet]) となっています。
+*@
+@(tweets: Seq[Tweet])
+
+@main("一覧画面") {
+  <h1>一覧画面です</h1>
+  <ul>
+    @* Twirlでのfor記法です。forと(の間にスペースを入れると動かないので注意してください *1 *@
+    @for(tweet <- tweets) {
+    <li>@tweet.content</li>
+    }
+  </ul>
+}
+```
+
+説明についてはプログラム上のコメントに記載してありますが、新しくimportと引数の受け取り、受け取ったインスタンの出力を追加してあります。  
+Twirlの記法については[こちら](https://www.playframework.com/documentation/ja/2.3.x/ScalaTemplates)を参考にしてください。  
+
+*1:  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/13_twirl_for_space_error.png" width="450">
+
+これで一覧表示の実装は完了です。  
+ブラウザから動作を確認してみましょう。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)
+
+以下のように表示されていればOKです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/14_list_view_part1.png" width="450">
 
 <a id="markdown-詳細ページ作成" name="詳細ページ作成"></a>
 ## 詳細ページ作成
