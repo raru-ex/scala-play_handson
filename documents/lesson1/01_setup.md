@@ -26,6 +26,10 @@
             - [モデルをViewへ渡す](#モデルをviewへ渡す)
             - [Viewでモデルを受け取り表示](#viewでモデルを受け取り表示)
     - [詳細ページ作成](#詳細ページ作成)
+        - [ルーティングの作成](#ルーティングの作成)
+        - [アクションとViewの追加](#アクションとviewの追加)
+        - [一覧からのリンク作成](#一覧からのリンク作成)
+        - [エラー処理](#エラー処理)
     - [登録・更新ページ作成](#登録・更新ページ作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
 
@@ -467,8 +471,134 @@ Twirlの記法については[こちら](https://www.playframework.com/documenta
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/14_list_view_part1.png" width="450">
 
+
 <a id="markdown-詳細ページ作成" name="詳細ページ作成"></a>
 ## 詳細ページ作成
+
+一覧が作成できたので、次は詳細ページを作成していきます。  
+データがコンテンツくらいしかないので寂しいページにはなりますが、復習もかねて一覧ページを作成したのと同じように実装を進めていきます。  
+
+<a id="markdown-ルーティングの作成" name="ルーティングの作成"></a>
+### ルーティングの作成
+
+詳細ページはどのデータの詳細情報を表示するか判断するための情報が必要になります。  
+今回はモデルにあるIDでデータを特定するように実装を進めます。  
+以下のようにroutesファイルにルーティングを追加してください。  
+
+`conf/routes`
+```
+GET     /                           controllers.HomeController.index
+GET     /tweet/list                 controllers.tweet.TweetController.list
+# 追加
+GET     /tweet/:id                  controllers.tweet.TweetController.show(id: Long)
+```
+
+`/tweet/:id`という記載がでてきました。  
+ここでは`:id`箇所のデータをパラメータとして受け取っています。  
+例えば`http://localhost:9000/tweet/1`のとき`TweetController`の`show`メソッドに`1`が引数として渡されます。  
+
+またパラメータ受け取りは今回のようなURL文字列からの取得以外にも、通常通りのQueryStringからの取得も可能です。  
+
+例えば以下のようなroutesがあったとします。  
+```
+GET     /tweet/detail               controllers.tweet.TweetController.show(id: Long)
+```
+このとき`http://localhost:9000/tweet/detail?id=1`のようなURLであれば、showに1が渡されます。 
+
+<a id="markdown-アクションとviewの追加" name="アクションとviewの追加"></a>
+### アクションとViewの追加
+
+routesに追加ができたので、そこに紐づくアクションとViewを追加してきます。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+@Singleton
+class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+  // DBのMockとして利用したいので、クラスのフィールドとして定義し直す
+  val tweets: Seq[Tweet] = (1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
+
+  def list() =  ... 省略 ...
+
+  def show(id: Long) = Action { implicit request: Request[AnyContent] =>
+    Ok(views.html.tweet.show(
+      // tweetsの一覧からIDが一致するものを一つ取得して返す
+      // getは良くない書き方なため、後のセクションで修正する
+      tweets.find(_.id.get == id).get
+    ))
+  }
+}
+
+```
+
+まずtweetsをフィールドとして定義し直しています。  
+これはDBなしでデータを一定期間保持しておくための実装なのです。  
+
+showメソッドの中でOption型を直接getしていますが、これはnullに対して安全な処理ができるメリットを捨ててしまうことになるため、後ほど修正していきます。  
+
+`views/tweet/show.scala.html`
+```html
+@import models.Tweet
+@(tweet: Tweet)
+
+@main("詳細画面") {
+  <h1>詳細画面です</h1>
+  <div id="detail">
+    <div>id: @tweet.id</div>
+    <div>id: @tweet.content</div>
+  </div>
+}
+```
+
+TwirlについてはSeqだった引数がTweetになっているくらいの変化しかありません。  
+
+ここまでできたら、以下のURLにアクセスして画面が正常に表示できるか確認してみましょう。  
+[http://localhost:9000/tweet/1](http://localhost:9000/tweet/1)
+
+以下のように表示されていればOKです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/15_detail_view_part1.png" width="450">
+
+<a id="markdown-一覧からのリンク作成" name="一覧からのリンク作成"></a>
+### 一覧からのリンク作成
+
+詳細ページ自体は完成したので、次は先きほど作成した一覧ページからリンクを通してみます。  
+
+`views/tweet/list.scala.html`
+```html
+@import models.Tweet
+@(tweets: Seq[Tweet])
+
+@main("一覧画面") {
+  <h1>一覧画面です</h1>
+  <ul>
+    @for(tweet <- tweets) {
+    <li>
+      @* よくウェブ上で @routes.HomeController.index のようなものをみるがこれはtwirlではデフォルトでcontrollers.routesがインポートされているためcontroller部分が省略されているだけ。*@
+      <a href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))">@tweet.content</a>
+    </li>
+    }
+  </ul>
+}
+```
+
+href部分ではroutesファイルの設定から、紐づくURLを作成するようにしてあります。  
+書き方は`{Controllerのパッケージ}.routes.{Controller名}`となります。
+  
+コメントにも記載していますが、ウェブ上で良くみる`@routes`から始まる書き方は実は自動的に`controllers.routes`がインポートされているためにcontrollersを省略された状態になっています。  
+
+ここを理解していないと独自でパッケージを切ったりしていく時に、非常に苦労することになるので頭の隅に残しておきましょう。  
+
+では、最後に動作確認です。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)
+
+以下のようにリンクが表示され、リンククリックで詳細ページが表示されたら完了です。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/16_list_view_part2.png" width="450">
+
+<a id="markdown-エラー処理" name="エラー処理"></a>
+### エラー処理
+
+TODO: 404
 
 <a id="markdown-登録・更新ページ作成" name="登録・更新ページ作成"></a>
 ## 登録・更新ページ作成
