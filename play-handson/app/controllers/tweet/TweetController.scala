@@ -6,6 +6,7 @@ import play.api.mvc.BaseController
 import play.api.mvc.Request
 import play.api.mvc.AnyContent
 import models.Tweet
+import play.api.http.DefaultHttpErrorHandler
 
 /**
   * @SingletonでPlayFrameworkの管理下でSingletonオブジェクトとして本クラスを扱う指定をする
@@ -29,10 +30,10 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
   }
 
   def show(id: Long) = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.tweet.show(
-      // tweetsの一覧からIDが一致するものを一つ取得して返す
-      // getは良くない書き方なため、後のセクションで修正する
-      tweets.find(_.id.get == id).get
-    ))
+    // idが存在して、値が一致する場合にfindが成立
+    tweets.find(_.id.exists(_ == id)) match {
+      case Some(tweet) => Ok(views.html.tweet.show(tweet))
+      case None        => NotFound("this tweet is not found")
+    }
   }
 }

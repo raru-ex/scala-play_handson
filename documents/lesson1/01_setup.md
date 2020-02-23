@@ -598,7 +598,43 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 <a id="markdown-エラー処理" name="エラー処理"></a>
 ### エラー処理
 
-TODO: 404
+先ほど省略したエラーページの表示を行います。  
+本格的に実装するケースとシンプルに実装するケースを記載するので、好みと時間に応じて使い分けてください。  
+
+#### 簡易実装
+
+まずはシンプルな実装からみてみましょう。  
+
+```scala
+def show(id: Long) = Action { implicit request: Request[AnyContent] =>
+    // idが存在して、値が一致する場合にfindが成立
+    tweets.find(_.id.exists(_ == id)) match {
+      case Some(tweet) => Ok(views.html.tweet.show(tweet))
+      // status codeを404にしつつメッセージを返しています。
+      case None        => NotFound("this tweet is not found")
+    }
+  }
+```
+
+この実装では元々`get`をしてしまっていた部分についても、改善するようにしています。  
+tweetのidがURLから受け取ったidと一致するものを`find`しています。  
+`exists`はNone.existsの場合に常に`false`になります。  
+
+今回は`NotFound`にメッセージを渡していますが、自身で作成した`scala.html`のページを渡せばそのページが表示できます。  
+Ok, NotFoundは同じクラスなので同様の使い方が可能です。  
+
+この状態で存在しないTweetを参照しようとすると以下のようになります。  
+[http://localhost:9000/tweet/1111](http://localhost:9000/tweet/1111)
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/17_simple_404.png" width="450">
+
+ステータスコードが404で、指定した文字が表示されていることが確認できますね。  
+シンプルにエラーページを作成する方法は以上です。  
+毎回viewを指定しなくてはならないので煩雑ではありますが、十分これでも対応できます。  
+
+
+#### 比較的実用的な実装
+
 
 <a id="markdown-登録・更新ページ作成" name="登録・更新ページ作成"></a>
 ## 登録・更新ページ作成
