@@ -596,22 +596,19 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/16_list_view_part2.png" width="450">
 
 <a id="markdown-エラー処理" name="エラー処理"></a>
-### エラー処理
+### エラーページ作成
 
 先ほど省略したエラーページの表示を行います。  
-本格的に実装するケースとシンプルに実装するケースを記載するので、好みと時間に応じて使い分けてください。  
+まずは実装からみてみましょう。  
 
-#### 簡易実装
-
-まずはシンプルな実装からみてみましょう。  
-
+`app/controllers/tweet/TweetController.scala`
 ```scala
 def show(id: Long) = Action { implicit request: Request[AnyContent] =>
     // idが存在して、値が一致する場合にfindが成立
     tweets.find(_.id.exists(_ == id)) match {
       case Some(tweet) => Ok(views.html.tweet.show(tweet))
-      // status codeを404にしつつメッセージを返しています。
-      case None        => NotFound("this tweet is not found")
+      // status codeを404にしつつページを返しています。
+      case None        => NotFound(views.html.error.page404())
     }
   }
 ```
@@ -620,24 +617,119 @@ def show(id: Long) = Action { implicit request: Request[AnyContent] =>
 tweetのidがURLから受け取ったidと一致するものを`find`しています。  
 `exists`はNone.existsの場合に常に`false`になります。  
 
-今回は`NotFound`にメッセージを渡していますが、自身で作成した`scala.html`のページを渡せばそのページが表示できます。  
+今回はデータのない場合の表示なのでstatusとして404(NotFound)を指定しています。  
 Ok, NotFoundは同じクラスなので同様の使い方が可能です。  
 
+次にNotFoundで指定してるページを作成します。  
+
+`views/error/page404.scala.html`
+```html
+@()
+
+@main("ページが見つかりません") {
+  <h1>ページが見つかりません。</h1>
+}
+```
+
+ここまでできたら動作を確認してみましょう。  
 この状態で存在しないTweetを参照しようとすると以下のようになります。  
 [http://localhost:9000/tweet/1111](http://localhost:9000/tweet/1111)
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/17_simple_404.png" width="450">
 
-ステータスコードが404で、指定した文字が表示されていることが確認できますね。  
-シンプルにエラーページを作成する方法は以上です。  
-毎回viewを指定しなくてはならないので煩雑ではありますが、十分これでも対応できます。  
-
-
-#### 比較的実用的な実装
-
+ステータスコードが404で、作成したページが表示されていることが確認できますね。  
+エラーページを作成する方法は以上です。  
 
 <a id="markdown-登録・更新ページ作成" name="登録・更新ページ作成"></a>
 ## 登録・更新ページ作成
 
 <a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
 ## Twirlの共通コンポーネント作成
+
+## おまけ
+
+### CustomErrorHandlerの作成
+
+システム開発ではよくエラーハンドラーを作成したくなることがあるので、作成の仕方を記載します。  
+公式サイトに記載されている内容とほとんど同じではありますが、もう少し知りたい方は[こちら](https://www.playframework.com/documentation/2.8.x/ScalaErrorHandling)を確認ください。  
+
+#### CustomErrorHandlerクラスの作成
+
+さっそく今回利用する`CustomErrorHandler`クラスを作成していきます。  
+今回のサンプルではPlayがデフォルトで表示する404ページを、以前のセクションで作成した404ページに差し替えてみます。  
+
+```scala
+package http
+
+import javax.inject._
+import play.api.http.DefaultHttpErrorHandler
+import play.api._
+import play.api.mvc._
+import play.api.mvc.Results._
+import play.api.routing.Router
+import scala.concurrent._
+
+@Singleton
+class CustomErrorHandler @Inject() (
+  env:          Environment,
+  config:       Configuration,
+  sourceMapper: OptionalSourceMapper,
+  router:       Provider[Router]
+) extends DefaultHttpErrorHandler(env, config, sourceMapper, router) {
+
+  override def onNotFound(request: RequestHeader, message: String): Future[Result] = {
+    Future.successful(
+      NotFound(views.html.error.page404())
+    )
+  }
+}
+```
+
+非常にシンプルですね。  
+今回は404ページを差し替えたいので`onNotFound`を`override`しています。  
+
+ちなみにですが`DefaultHttpErrorHandler`の実装はこのようになっています。  
+```scala
+protected def onNotFound(request: RequestHeader, message: String): Future[Result] = {
+    Future.successful {
+      if (config.showDevErrors) {
+        NotFound(views.html.defaultpages.devNotFound(request.method, request.uri, router)(request))
+      } else {
+        NotFound(views.html.defaultpages.notFound(request.method, request.uri)(request))
+      }
+    }
+  }
+```
+
+こちらは環境設定により、エラー画面を出し分けているようですね。  
+開発を行う際にこちらの方が都合が良いようでしたら、この実装を参考にしてください。  
+
+
+他にも`onClientError`, `onServerError`, `onForbidden`, `onBadRequest`などが存在しますが、同じように`override`が可能です。  
+詳しくは`play.api.http`パッケージの`HttpErrorHandler.scala`あたりをみてみましょう。  
+
+Playでは良い感じにそれぞれのメソッドを呼び出してくれるので、対応するメソッドを上書きしてあげれば良いと言う作りです。  
+
+
+#### 利用するエラーハンドラをPlayに設定
+
+クラスが作成できたらPlayにこのクラスを利用することを伝えてあげましょう。  
+Playではエラーハンドラを指定する方法が2つあります。
+
+1. プロジェクトrootにErrorHandler.scalaを配置する
+2. application.confに設定する
+
+今回は2の方法で対応してみたいと思います。  
+
+`conf/application.conf`
+```
+play.http.errorHandler = "http.CustomErrorHandler"
+```
+
+これで設定は完了です。  
+それでは動作をみてみましょう。  
+[http://localhost:9000/hogehoge/fugafuga](http://localhost:9000/hogehoge/fugafuga)
+
+アクセすると以下の画面になっていれば実装完了です。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/18_on_notfound.png" width="450">

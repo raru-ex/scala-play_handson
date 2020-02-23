@@ -7,6 +7,7 @@ import play.api.mvc.Request
 import play.api.mvc.AnyContent
 import models.Tweet
 import play.api.http.DefaultHttpErrorHandler
+import views.html.defaultpages.notFound
 
 /**
   * @SingletonでPlayFrameworkの管理下でSingletonオブジェクトとして本クラスを扱う指定をする
@@ -33,7 +34,7 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
     // idが存在して、値が一致する場合にfindが成立
     tweets.find(_.id.exists(_ == id)) match {
       case Some(tweet) => Ok(views.html.tweet.show(tweet))
-      case None        => NotFound("this tweet is not found")
+      case None        => NotFound(views.html.error.page404())
     }
   }
 }
