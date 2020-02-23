@@ -29,9 +29,13 @@
         - [ルーティングの作成](#ルーティングの作成)
         - [アクションとViewの追加](#アクションとviewの追加)
         - [一覧からのリンク作成](#一覧からのリンク作成)
-        - [エラー処理](#エラー処理)
+        - [エラーページ作成](#エラーページ作成)
     - [登録・更新ページ作成](#登録・更新ページ作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
+    - [おまけ](#おまけ)
+        - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
+            - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
+            - [利用するエラーハンドラをPlayに設定](#利用するエラーハンドラをplayに設定)
 
 <!-- /TOC -->
 
@@ -595,7 +599,7 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/16_list_view_part2.png" width="450">
 
-<a id="markdown-エラー処理" name="エラー処理"></a>
+<a id="markdown-エラーページ作成" name="エラーページ作成"></a>
 ### エラーページ作成
 
 先ほど省略したエラーページの表示を行います。  
@@ -646,13 +650,16 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 <a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
 ## Twirlの共通コンポーネント作成
 
+<a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
 
+<a id="markdown-customerrorhandlerの作成" name="customerrorhandlerの作成"></a>
 ### CustomErrorHandlerの作成
 
 システム開発ではよくエラーハンドラーを作成したくなることがあるので、作成の仕方を記載します。  
 公式サイトに記載されている内容とほとんど同じではありますが、もう少し知りたい方は[こちら](https://www.playframework.com/documentation/2.8.x/ScalaErrorHandling)を確認ください。  
 
+<a id="markdown-customerrorhandlerクラスの作成" name="customerrorhandlerクラスの作成"></a>
 #### CustomErrorHandlerクラスの作成
 
 さっそく今回利用する`CustomErrorHandler`クラスを作成していきます。  
@@ -711,6 +718,7 @@ protected def onNotFound(request: RequestHeader, message: String): Future[Result
 Playでは良い感じにそれぞれのメソッドを呼び出してくれるので、対応するメソッドを上書きしてあげれば良いと言う作りです。  
 
 
+<a id="markdown-利用するエラーハンドラをplayに設定" name="利用するエラーハンドラをplayに設定"></a>
 #### 利用するエラーハンドラをPlayに設定
 
 クラスが作成できたらPlayにこのクラスを利用することを伝えてあげましょう。  
