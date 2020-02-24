@@ -24,7 +24,7 @@ case class TweetFormData(content: String)
 @Singleton
 class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
   // DBのMockとして利用したいので、mutableなクラスのフィールドとして定義し直す
-  val tweets: Seq[Tweet] = (1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
+  val tweets = scala.collection.mutable.ArrayBuffer((1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}")): _*)
 
   // Tweet登録用のFormオブジェクト
   val form = Form(
@@ -41,8 +41,8 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
     // Ok()はステータスコードが200な、Resultをreturnします。
     // つまり正常系としてviews.html.tweet.listのコンテンツを返すということになります。
 
-    // viewの引数としてtweetsを渡します。
-    Ok(views.html.tweet.list(tweets))
+    // viewの引数としてimmutableなtweetsを渡します。
+    Ok(views.html.tweet.list(tweets.toSeq))
   }
 
   /**
@@ -62,27 +62,23 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
   def register() = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.tweet.store(form))
   }
- 
-  def store() = Action { implicit request: Request[AnyContent] =>
-    NoContent
-  }
 
   /**
     * 登録処理実を行う
     */
-  // def store() = Action { implicit request: Request[AnyContent] =>
-  //   // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
-  //   form.bindFromRequest().fold(
-  //     // 処理が失敗した場合に呼び出される関数
-  //     (formWithErrors: Form[TweetFormData]) => {
-  //       BadRequest(views.html.tweet.store(formWithErrors))
-  //     },
-  //     // 処理が成功した場合に呼び出される関数
-  //     (tweetFormData: TweetFormData) => {
-  //       // TODO: seqをmutable化
-  //       Redirect("/tweet/list")
-  //     }
-  //   )
-  // }
+  def store() = Action { implicit request: Request[AnyContent] =>
+    // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
+    form.bindFromRequest().fold(
+      // 処理が失敗した場合に呼び出される関数
+      (formWithErrors: Form[TweetFormData]) => {
+        BadRequest(views.html.tweet.store(formWithErrors))
+      },
+      // 処理が成功した場合に呼び出される関数
+      (tweetFormData: TweetFormData) => {
+        tweets += Tweet(None, tweetFormData.content)
+        Redirect("/tweet/list")
+      }
+    )
+  }
 
 }

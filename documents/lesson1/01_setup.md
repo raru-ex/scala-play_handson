@@ -29,9 +29,21 @@
         - [ルーティングの作成](#ルーティングの作成)
         - [アクションとViewの追加](#アクションとviewの追加)
         - [一覧からのリンク作成](#一覧からのリンク作成)
-        - [エラー処理](#エラー処理)
-    - [登録・更新ページ作成](#登録・更新ページ作成)
+        - [エラーページ作成](#エラーページ作成)
+    - [登録ページの作成](#登録ページの作成)
+        - [ルーティングの追加](#ルーティングの追加)
+        - [登録用画面の実装](#登録用画面の実装)
+            - [Formの追加](#formの追加)
+            - [画面表示用アクションの追加](#画面表示用アクションの追加)
+            - [viewの作成](#viewの作成)
+        - [登録処理の実装](#登録処理の実装)
+            - [tweetsのSeqをmutable化](#tweetsのseqをmutable化)
+            - [登録用アクションの実装](#登録用アクションの実装)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
+    - [おまけ](#おまけ)
+        - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
+            - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
+            - [利用するエラーハンドラをPlayに設定](#利用するエラーハンドラをplayに設定)
 
 <!-- /TOC -->
 
@@ -595,7 +607,7 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/16_list_view_part2.png" width="450">
 
-<a id="markdown-エラー処理" name="エラー処理"></a>
+<a id="markdown-エラーページ作成" name="エラーページ作成"></a>
 ### エラーページ作成
 
 先ほど省略したエラーページの表示を行います。  
@@ -640,7 +652,7 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 ステータスコードが404で、作成したページが表示されていることが確認できますね。  
 エラーページを作成する方法は以上です。  
 
-<a id="markdown-登録・更新ページ作成" name="登録・更新ページ作成"></a>
+<a id="markdown-登録ページの作成" name="登録ページの作成"></a>
 ## 登録ページの作成
 
 次は登録機能を作成していきます。  
@@ -649,6 +661,7 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 登録処理は今までの機能とは違い、画面からformの値を受け取るという動作があります。  
 Formはよく利用する機能なので登録・更新と処理を書く中で少しずつ慣れていきましょう。  
 
+<a id="markdown-ルーティングの追加" name="ルーティングの追加"></a>
 ### ルーティングの追加
 
 `conf/routes`
@@ -682,10 +695,12 @@ GET     /tweet/{<[0-9]+>id}         controllers.tweet.TweetController.show(id: L
 
 これで`show`のルーティングでは0-9の数字しか受け付けなくなりました。  
 
+<a id="markdown-登録用画面の実装" name="登録用画面の実装"></a>
 ### 登録用画面の実装
 
 続いてコントローラを修正していきますが、今回はアクションの追加のみではなくFormオブジェクトの設定も行なっていきます。  
 
+<a id="markdown-formの追加" name="formの追加"></a>
 #### Formの追加
 
 まずFormオブジェクトの追加を行っていきます。  
@@ -742,6 +757,7 @@ Formの使い方の詳細は以下の公式ドキュメントを参照してく�
 
 今回利用するフォームがオブジェクトができたので、次はルーティングに対応するアクションを追加していきましょう。  
 
+<a id="markdown-画面表示用アクションの追加" name="画面表示用アクションの追加"></a>
 #### 画面表示用アクションの追加
 
 まずは簡単な登録画面表示のアクションから作成していきます。  
@@ -774,6 +790,7 @@ def store() = Action { implicit request: Request[AnyContent] =>
 ここで先ほど作成したformを画面へ渡しています。  
 先ほどの実装ではフォームをいくつか作成していましたが、ここでは`form2`のみを残して`form`にリネームしています。  
 
+<a id="markdown-viewの作成" name="viewの作成"></a>
 #### viewの作成
 
 アクションが作成できたのでViewを追加します。  
@@ -877,25 +894,71 @@ $ sbt compile
 ちょっと不格好ですが、この辺りは後ほど修正していきます。  
 少し長丁場になっていますが、次は登録処理を作成していきましょう。  
 
+<a id="markdown-登録処理の実装" name="登録処理の実装"></a>
 ### 登録処理の実装
 
 登録処理の実装は今までのアクションと比べて少し複雑になります。  
 具体的には画面から受け取ったフォームデータの利用や、入力ミスがあった場合の元画面でのエラー表示などがあります。  
 
+<a id="markdown-tweetsのseqをmutable化" name="tweetsのseqをmutable化"></a>
+#### tweetsのSeqをmutable化
 
+tweetのインスタンスデータを保持しつつ、可変な状態にするために`tweets`フィールドを可変配列に置き換えていきます。  
+Scalaではimmutableなオブジェクトやリストを利用するのが基本のため、あくまでサンプルのための実装になります。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
+  // DBのMockとして利用したいので、mutableなクラスのフィールドとして定義し直す
+  val tweets = scala.collection.mutable.ArrayBuffer((1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}")): _*)
+
+// ...省略
+
+
+  def list() =  Action { implicit request: Request[AnyContent] =>
+    // 型エラー回避のためtweets.toSeqでimmutableSeqに変換してから画面に渡す
+    Ok(views.html.tweet.list(tweets.toSeq))
+  }
+```
+
+これでtweetsをデータ保持しつつ可変な配列に変更できました。  
+
+<a id="markdown-登録用アクションの実装" name="登録用アクションの実装"></a>
+#### 登録用アクションの実装
+
+
+```scala
+def store() = Action { implicit request: Request[AnyContent] =>
+  // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
+  form.bindFromRequest().fold(
+    // 処理が失敗した場合に呼び出される関数
+    (formWithErrors: Form[TweetFormData]) => {
+      BadRequest(views.html.tweet.store(formWithErrors))
+    },
+    // 処理が成功した場合に呼び出される関数
+    (tweetFormData: TweetFormData) => {
+      tweets += Tweet(None, tweetFormData.content)
+      Redirect("/tweet/list")
+    }
+  )
+}
+```
 
 
 
 <a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
 ## Twirlの共通コンポーネント作成
 
+<a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
 
+<a id="markdown-customerrorhandlerの作成" name="customerrorhandlerの作成"></a>
 ### CustomErrorHandlerの作成
 
 システム開発ではよくエラーハンドラーを作成したくなることがあるので、作成の仕方を記載します。  
 公式サイトに記載されている内容とほとんど同じではありますが、もう少し知りたい方は[こちら](https://www.playframework.com/documentation/2.8.x/ScalaErrorHandling)を確認ください。  
 
+<a id="markdown-customerrorhandlerクラスの作成" name="customerrorhandlerクラスの作成"></a>
 #### CustomErrorHandlerクラスの作成
 
 さっそく今回利用する`CustomErrorHandler`クラスを作成していきます。  
@@ -954,6 +1017,7 @@ protected def onNotFound(request: RequestHeader, message: String): Future[Result
 Playでは良い感じにそれぞれのメソッドを呼び出してくれるので、対応するメソッドを上書きしてあげれば良いと言う作りです。  
 
 
+<a id="markdown-利用するエラーハンドラをplayに設定" name="利用するエラーハンドラをplayに設定"></a>
 #### 利用するエラーハンドラをPlayに設定
 
 クラスが作成できたらPlayにこのクラスを利用することを伝えてあげましょう。  
