@@ -29,13 +29,9 @@
         - [ルーティングの作成](#ルーティングの作成)
         - [アクションとViewの追加](#アクションとviewの追加)
         - [一覧からのリンク作成](#一覧からのリンク作成)
-        - [エラーページ作成](#エラーページ作成)
+        - [エラー処理](#エラー処理)
     - [登録・更新ページ作成](#登録・更新ページ作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
-    - [おまけ](#おまけ)
-        - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
-            - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
-            - [利用するエラーハンドラをPlayに設定](#利用するエラーハンドラをplayに設定)
 
 <!-- /TOC -->
 
@@ -599,7 +595,7 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/16_list_view_part2.png" width="450">
 
-<a id="markdown-エラーページ作成" name="エラーページ作成"></a>
+<a id="markdown-エラー処理" name="エラー処理"></a>
 ### エラーページ作成
 
 先ほど省略したエラーページの表示を行います。  
@@ -613,7 +609,7 @@ def show(id: Long) = Action { implicit request: Request[AnyContent] =>
       case Some(tweet) => Ok(views.html.tweet.show(tweet))
       // status codeを404にしつつページを返しています。
       case None        => NotFound(views.html.error.page404())
-    }
+   }
   }
 ```
 
@@ -645,21 +641,261 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 エラーページを作成する方法は以上です。  
 
 <a id="markdown-登録・更新ページ作成" name="登録・更新ページ作成"></a>
-## 登録・更新ページ作成
+## 登録ページの作成
+
+次は登録機能を作成していきます。  
+例によってconf, controllerと修正していきましょう。  
+
+登録処理は今までの機能とは違い、画面からformの値を受け取るという動作があります。  
+Formはよく利用する機能なので登録・更新と処理を書く中で少しずつ慣れていきましょう。  
+
+### ルーティングの追加
+
+`conf/routes`
+```
+GET     /                           controllers.HomeController.index
+GET     /tweet/list                 controllers.tweet.TweetController.list
+GET     /tweet/:id                  controllers.tweet.TweetController.show(id: Long)
+# 下の2つを追加
+GET     /tweet/store                controllers.tweet.TweetController.register
+# POST    /tweet/store                controllers.tweet.TweetController.store
+```
+
+今回は`/tweet/store`というルーティングをget, postのそれぞれで追加しています。  
+これは登録用画面の表示と、実際に登録処理を行うアクションで2つのアクションが必要になるためです。  
+
+またルーティングは追加してみましたが、実はこのルーティングは正常に動作しません。  
+理由は`/tweet/:id`の設定の方が上位に書かれているからです。  
+playのルーティングは先勝ちになっているようで`/tweet/store`にアクセスしようとすると`:id`の部分に`store`が取られてしまいます。  
+
+これを回避するには2つの方法があります。  
+
+1. `/tweet/:id`が数値のみをとるように変更する
+2. storeのルーティングを上にあげる
+
+基本的には1の方が良いので、ここでは1の方法で修正してみます。
+
+`conf/routes`
+```
+GET     /tweet/{<[0-9]+>id}         controllers.tweet.TweetController.show(id: Long)
+```
+
+これで`show`のルーティングでは0-9の数字しか受け付けなくなりました。  
+
+### 登録用画面の実装
+
+続いてコントローラを修正していきますが、今回はアクションの追加のみではなくFormオブジェクトの設定も行なっていきます。  
+
+#### Formの追加
+
+まずFormオブジェクトの追加を行っていきます。  
+Formオブジェクトを利用することでPOSTでの値受け取りをフレームワーク側に移譲しつつ、バリデーションなどの処理を簡単に適用することができます。  
+
+習うよりコードを見た方が早いと思うので、早速コードをみてみましょう。  
+Formはいくつかの書き方が出来るので複数の書き方を記載していますが、結論パターン2の書き方で実装を進めていきます。。  
+
+```scala
+// パターン2用のcase class
+case class TweetFormData(content: String)
+
+class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+  // ...省略
+
+  // パターン1: 既存クラスを使いまわして、apply, unapplyを自前で書くパターン
+  val form1: From[Tweet] = Form(
+    // html formのnameがcontentのものを140文字以下の必須文字列に設定する
+    mapping(
+      "content" -> nonEmptyText(maxLength = 140)
+    )
+    // apply, unapplyを自分で書いているパターン
+    ((content: String)  => Tweet(None, content))
+    ((v: Tweet)         => Some(v.content))
+  )
+
+  // パターン2: Form用にcase classを作成するパターン(推奨)
+  val form2: From[Tweet] = Form(
+    mapping(
+      "content" -> nonEmptyText(maxLength = 140)
+    )(TweetFormData.apply)(TweetFormData.unapply)
+  )
+
+
+  // パターン3: tuple, singleを利用するパターン
+  // 受けとるデータが単数なのでsingleとしていますが、複数の場合にはtuple()になります。 
+  val form3 = Form(
+    single(
+      "content" -> nonEmptyText(maxLength = 140)
+    )
+  )
+
+
+  // ...省略
+}
+```
+
+`single`, `tuple`と`mapping`の使い分けは、Formから受け取った値をクラスにマッピングしたいときには`mapping`  
+そのまま利用したいときには`single`, `tuple`を利用する、なります。  
+
+デフォルトで利用できるバリデータは他にも`email`, `number`, `boolean`などがあります。  
+Formの使い方の詳細は以下の公式ドキュメントを参照してください。  
+[参照: Form submission and validation](https://www.playframework.com/documentation/2.8.x/ScalaForms)
+
+今回利用するフォームがオブジェクトができたので、次はルーティングに対応するアクションを追加していきましょう。  
+
+#### 画面表示用アクションの追加
+
+まずは簡単な登録画面表示のアクションから作成していきます。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+// controllersクラスの外に記載
+case class TweetFormData(content: String)
+
+// ...省略
+val form = Form(
+    // html formのnameがcontentのものを140文字以下の必須文字列に設定する
+    mapping(
+      "content" -> nonEmptyText(maxLength = 140)
+    )(TweetFormData.apply)(TweetFormData.unapply)
+  )
+
+// ...省略
+def register() = Action { implicit request: Request[AnyContent] =>
+  Ok(views.html.tweet.store(form))
+}
+
+// コンパイルエラー回避用に何もしない登録用のstoreメソッドも作成
+def store() = Action { implicit request: Request[AnyContent] =>
+  NoContent
+}
+```
+
+シンプルですね。  
+ここで先ほど作成したformを画面へ渡しています。  
+先ほどの実装ではフォームをいくつか作成していましたが、ここでは`form2`のみを残して`form`にリネームしています。  
+
+#### viewの作成
+
+アクションが作成できたのでViewを追加します。  
+今までのViewを参考にしつつ、以下のようにファイルを作成していきましょう。  
+
+`views/tweet/store.scala.html`
+```html
+@import controllers.tweet.TweetFormData
+@(form: Form[TweetFormData])
+
+@main("登録画面") {
+  <h1>登録画面です</h1>
+  @helper.form(action = controllers.tweet.routes.TweetController.store()) {
+    @helper.inputText(form("content"))
+    <input type="submit" value="登録">
+  }
+}
+```
+
+今回新しく`@helper`というパッケージを利用しています。  
+ここにはFormを利用するためのヘルパー関数がいくつも用意されています。  
+importに`@import helper._`を追加して利用するのも、わりと一般的です。  
+
+ここまで出来たら、一度コンパイルしてみましょう。  
+そうすると以下のようにエラーになると思います。  
+```sh
+$ sbt compile
+
+An implicit MessagesProvider instance was not found.  Please see https://www.playframework.com/documentation/latest/ScalaForms#Passing-MessagesProvider-to-Form-Helpers
+[error]     @helper.inputText(form("content"))
+[error]                      ^
+[error] one error found
+[error] (Compile / compileIncremental) Compilation failed
+[error] Total time: 0 s, completed 2020/02/24 21:37:20
+```
+
+これはinputTextが暗黙の引数としてmessagesProviderのインスタンスを必要としているために発生します。  
+何をヒントに修正していけばいいのかは、エラーメッセージの中に書かれていますね。  
+[Passing-MessagesProvider-to-Form-Helpers](https://www.playframework.com/documentation/latest/ScalaForms#Passing-MessagesProvider-to-Form-Helpers)
+
+implicitが出てくると非常に難しく感じてしまいますが、最初は直接手で引数を渡すと面倒くさいから自動で渡すようにしている、くらいの理解で良いと思います。  
+
+エラー修正のため、messagesProviderをviewへ渡していきます。  
+
+```html
+@import controllers.tweet.TweetFormData
+@* 以下の引数ブロックにimplicit用の引数を追加 *@
+@(form: Form[TweetFormData])(implicit messageProvider: MessagesProvider)
+
+@main("登録画面") {
+  <h1>登録画面です</h1>
+  @helper.form(action = controllers.tweet.routes.TweetController.store()) {
+    @helper.inputText(form("content"))
+    <input type="submit" value="登録">
+  }
+}
+```
+
+この状態でもう一度コンパイルをしてみると、どうでしょう。
+
+```sh
+$ sbt compile
+
+An implicit MessagesProvider instance was not found.  Please see https://www.playframework.com/documentation/latest/ScalaForms#Passing-MessagesProvider-to-Form-Helpers
+[error]     Ok(views.html.tweet.store(form))
+[error]                              ^
+[error] one error found
+[error] (Compile / compileIncremental) Compilation failed
+
+```
+
+先ほどと同様のエラーですが、エラーが出る箇所がコントローラまで上ってきています。  
+そのため、次はコントローラを修正してあげる必要があります。  
+修正方法はエラーメッセージの中にある`Please see`のリンク先を見ればわかるようになっています。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/19_implicit_MessagesProvider.png" width="450">
+
+こちらを参考にコントローラを直してみましょう。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+class TweetController @Inject()(val controllerComponents: ControllerComponents) 
+extends BaseController with I18nSupport {
+```
+
+`with`句で新しくI18nSupportをmixinしています。  
+これでコンパイルをするとエラーが解決されているのが確認できるはずです。  
+
+```sh
+$ sbt compile
+[success] Total time: 0 s, completed 2020/02/24 22:09:40
+```
+
+ここまで出来たら、一度登録画面を表示してみましょう。  
+[http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)
+
+以下のように画面が表示されていればOKです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/20_view_register_page.png" width="450">
+
+ちょっと不格好ですが、この辺りは後ほど修正していきます。  
+少し長丁場になっていますが、次は登録処理を作成していきましょう。  
+
+### 登録処理の実装
+
+登録処理の実装は今までのアクションと比べて少し複雑になります。  
+具体的には画面から受け取ったフォームデータの利用や、入力ミスがあった場合の元画面でのエラー表示などがあります。  
+
+
+
+
 
 <a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
 ## Twirlの共通コンポーネント作成
 
-<a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
 
-<a id="markdown-customerrorhandlerの作成" name="customerrorhandlerの作成"></a>
 ### CustomErrorHandlerの作成
 
 システム開発ではよくエラーハンドラーを作成したくなることがあるので、作成の仕方を記載します。  
 公式サイトに記載されている内容とほとんど同じではありますが、もう少し知りたい方は[こちら](https://www.playframework.com/documentation/2.8.x/ScalaErrorHandling)を確認ください。  
 
-<a id="markdown-customerrorhandlerクラスの作成" name="customerrorhandlerクラスの作成"></a>
 #### CustomErrorHandlerクラスの作成
 
 さっそく今回利用する`CustomErrorHandler`クラスを作成していきます。  
@@ -718,7 +954,6 @@ protected def onNotFound(request: RequestHeader, message: String): Future[Result
 Playでは良い感じにそれぞれのメソッドを呼び出してくれるので、対応するメソッドを上書きしてあげれば良いと言う作りです。  
 
 
-<a id="markdown-利用するエラーハンドラをplayに設定" name="利用するエラーハンドラをplayに設定"></a>
 #### 利用するエラーハンドラをPlayに設定
 
 クラスが作成できたらPlayにこのクラスを利用することを伝えてあげましょう。  
