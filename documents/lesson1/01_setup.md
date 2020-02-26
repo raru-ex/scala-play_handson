@@ -926,23 +926,109 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 <a id="markdown-登録用アクションの実装" name="登録用アクションの実装"></a>
 #### 登録用アクションの実装
 
+tweetsを可変Seqに変更できたので、改めて登録処理を実装していきます。  
+作成が完了した処理をみてみましょう。  
 
 ```scala
 def store() = Action { implicit request: Request[AnyContent] =>
   // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
   form.bindFromRequest().fold(
     // 処理が失敗した場合に呼び出される関数
+    // 処理失敗の例: バリデーションエラー
     (formWithErrors: Form[TweetFormData]) => {
       BadRequest(views.html.tweet.store(formWithErrors))
     },
     // 処理が成功した場合に呼び出される関数
     (tweetFormData: TweetFormData) => {
-      tweets += Tweet(None, tweetFormData.content)
+      // 登録処理としてSeqに画面から受け取ったコンテンツを持つTweetを追加
+      tweets += Tweet(Some(tweets.size + 1L), tweetFormData.content)
+      // 登録が完了したら一覧画面へリダイレクトする
       Redirect("/tweet/list")
+      // 以下のような書き方も可能です。twirl側と同じですね
+      // Redirect(controllers.tweet.routes.TweetController.list())
     }
   )
 }
 ```
+
+`bindFromRequest`はimplicitでrequestを受け取っています。  
+なので、このリクエスト情報からformで設定したマッピング情報を元に入力チェックと値変換を行います。  
+その処理の成否によって`fold`で処理を分岐しているという動きです。  
+
+失敗時には400のBadRequestとして受け取ったフォームデータにエラーメッセージを追加して元の画面に戻しています。  
+成功時には受け取ったデータから新しいTweetを作成して一覧画面へリダイレクトしています。  
+
+ちなみに、`fold()()`で失敗を左、成功を右のような動きは`Option`や`Either`にも似たようなものがあります。  
+`Seq`だとまた雰囲気の違う動きになるのですが、この辺の違いは圏論でいうところの`Catamorphism`というものを理解するとわかるようになるみたいです。  
+私はこの辺りは良くわからないので省略しますが、このfoldの使い方は割とよくあるみたいなので気が向いた際に学習してみたり、頭の隅に置いておくとコードが読みやすくなるかもしれません。  
+
+では、処理が書けたの実際に登録画面から登録してみてください。
+[http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)
+
+登録してみるとどのようになるでしょうか。  
+以下のような画面になっていないでしょうか。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/21_csrf_error.png" width="450">
+
+これだけだとよくわからないですよね。  
+こういうときはコンソールに出ているメッセージを確認してみましょう。  
+
+```sh
+[warn] p.filters.CSRF - [CSRF] Check failed because no or invalid token found in body for /tweet/store
+[warn] p.filters.CSRF - [CSRF] Check failed with NoTokenInBody for /tweet/store
+```
+
+サーバのログにこのようなメッセージが出ていました。  
+CSRFのチェックが正常に行われずにエラーになっているようです。  
+
+実はPlayではPOST, PUTなどはデフォルトでCSRFチェックがかかるようになっています。  
+そのため画面からトークンを渡しておらずエラーになるということですね。  
+詳細は[こちら](https://www.playframework.com/documentation/2.8.x/ScalaCsrf)に記載されています。  
+
+では、公式サイトの情報に習って修正を行っていきましょう。  
+
+```html
+@import controllers.tweet.TweetFormData
+@* CSRFトークンの生成ヘルパーで、requestHeaderを必要としているのでこちらも暗黙パラメートして渡しています。 *@
+@(form: Form[TweetFormData])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@main("登録画面") {
+  <h1>登録画面です</h1>
+  @helper.form(action = controllers.tweet.routes.TweetController.store()) {
+    @* CSRFトークンの生成ヘルパーを呼び出している。これでいい感じにトークンが用意されます。 *@
+    @helper.CSRF.formField
+    @helper.inputText(form("content"))
+    <input type="submit" value="登録">
+  }
+}
+```
+
+今回implicitの引数を一つ追加しています。  
+implicitと書かれていませんが、implicitにした引数のブロックは全部implicitになりますし、それ以外は定義できません。  
+以下のようなことをするとコンパイルエラーになります。  
+`(messagesProvider: MessagesProvider, implicit requestHeader: RequestHeader)`
+
+もう一つこのrequestHeaderを利用して、CSRFトークンを生成するヘルパーを呼び出しています。  
+実際に実装の定義を見ていると以下のようになっており、implicitで引数を求めていますね。  
+`def formField(implicit request: RequestHeader): Html`
+
+それでは今度こそ動作をみてみましょう。  
+[http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)
+
+##### バリデーションエラーの場合
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/22_validation_error.png" width="450">
+
+##### 登録成功の場合
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/23_store_success.png" width="450">
+
+それぞれこのようになっていれば完了です。  
+
+### 表示・テンプレートの調整
+
+基本的にはこれまでの部分で登録処理は完成ですが、英語でメッセージが出ていたり、フォームヒントが出ていることが見栄え的に良くないので、その部分の対応の仕方を記載します。  
+
 
 
 

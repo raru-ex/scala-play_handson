@@ -75,8 +75,9 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
       },
       // 処理が成功した場合に呼び出される関数
       (tweetFormData: TweetFormData) => {
-        tweets += Tweet(None, tweetFormData.content)
-        Redirect("/tweet/list")
+        tweets += Tweet(Some(tweets.size + 1L), tweetFormData.content)
+        // Redirect("/tweet/list")
+        Redirect(controllers.tweet.routes.TweetController.list())
       }
     )
   }

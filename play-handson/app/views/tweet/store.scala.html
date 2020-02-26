@@ -1,9 +1,12 @@
 @import controllers.tweet.TweetFormData
-@(form: Form[TweetFormData])(implicit messagesProvider: MessagesProvider)
+@* CSRFトークンの生成ヘルパーで、requestHeaderを必要としているのでこちらも暗黙パラメートして渡しています。 *@
+@(form: Form[TweetFormData])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
 @main("登録画面") {
   <h1>登録画面です</h1>
   @helper.form(action = controllers.tweet.routes.TweetController.store()) {
+    @* CSRFトークンの生成ヘルパーを呼び出している。これでいい感じにトークンが用意されます。 *@
+    @helper.CSRF.formField
     @helper.inputText(form("content"))
     <input type="submit" value="登録">
   }
