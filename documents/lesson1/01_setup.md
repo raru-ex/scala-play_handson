@@ -1076,6 +1076,9 @@ play.i18n.langs        = ["ja", "en-US"]
 
 このようにするとAccept-Languageヘッダに`ja`、`en-US`の文字があったときに優先度に合わせてplayが自動的に読み込みに行く`message`ファイルを切り替えてくれます。  
 
+以下の部分にあるものです。  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/26_accept-languages.png" width="450">
+
 このとき対象のファイルは`messages.{lang}`というフォーマットになります。  
 今回だと`messages.ja`と`messages.en-US`になります。  
 
