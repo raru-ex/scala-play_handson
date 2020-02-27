@@ -39,6 +39,13 @@
         - [登録処理の実装](#登録処理の実装)
             - [tweetsのSeqをmutable化](#tweetsのseqをmutable化)
             - [登録用アクションの実装](#登録用アクションの実装)
+                - [バリデーションエラーの場合](#バリデーションエラーの場合)
+                - [登録成功の場合](#登録成功の場合)
+        - [表示・テンプレートの調整](#表示・テンプレートの調整)
+            - [日本語メッセージの表示](#日本語メッセージの表示)
+                - [application.confの設定](#applicationconfの設定)
+                - [messagesファイルの設定](#messagesファイルの設定)
+            - [入力のヒント表示制御](#入力のヒント表示制御)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
@@ -1015,19 +1022,109 @@ implicitと書かれていませんが、implicitにした引数のブロック�
 それでは今度こそ動作をみてみましょう。  
 [http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)
 
+<a id="markdown-バリデーションエラーの場合" name="バリデーションエラーの場合"></a>
 ##### バリデーションエラーの場合
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/22_validation_error.png" width="450">
 
+<a id="markdown-登録成功の場合" name="登録成功の場合"></a>
 ##### 登録成功の場合
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/23_store_success.png" width="450">
 
 それぞれこのようになっていれば完了です。  
 
+<a id="markdown-表示・テンプレートの調整" name="表示・テンプレートの調整"></a>
 ### 表示・テンプレートの調整
 
 基本的にはこれまでの部分で登録処理は完成ですが、英語でメッセージが出ていたり、フォームヒントが出ていることが見栄え的に良くないので、その部分の対応の仕方を記載します。  
+
+<a id="markdown-日本語メッセージの表示" name="日本語メッセージの表示"></a>
+#### 日本語メッセージの表示
+
+まずエラーメッセージやフォームへの注釈表示を日本語に対応してみます。  
+
+多言語化対応はi18nの機能で実装されており、それぞれの言語に合わせたメッセージを設定することで霧狩ることができます。  
+
+今回は例として日本語への対応を行ってみます。  
+
+<a id="markdown-applicationconfの設定" name="applicationconfの設定"></a>
+##### application.confの設定
+
+まずはどの言語に対応するかを`application.conf`へ設定していきます。  
+
+`conf/application.conf`
+```
+# application.confでは#の行がコメントになります。  
+
+# i18n設定
+# conf/{play.i18n.path}messagesとなる
+play.i18n.path         = "messages/"
+
+# HTTP HeaderのAccept-Languageの値と比較を行い許可する対象を設定する
+# messages.{langs}のファイルが読み込み対象になる
+play.i18n.langs        = ["ja", "en-US"]
+```
+
+今回設定しているのは2つ。  
+1つ目がメッセージファイルの配置場所です。  
+デフォルトでは`conf/`直下がファイルの配置場所になっていますが、各言語のファイルが並ぶと見辛いので場所を変更しています。  
+通常日本語くらいしか利用しないとは思いますが、フォルダ位置を変更したくなる人もいるとおもうため、そこでハマってしまう人を減らす意図も有ります。  
+
+2つ目が対応するAccept-Languageの値の指定です。  
+今回は日本語とアメリカ英語を対象にしています。  
+
+このようにするとAccept-Languageヘッダに`ja`、`en-US`の文字があったときに優先度に合わせてplayが自動的に読み込みに行く`message`ファイルを切り替えてくれます。  
+
+このとき対象のファイルは`messages.{lang}`というフォーマットになります。  
+今回だと`messages.ja`と`messages.en-US`になります。  
+
+またどの設定にも当てはまらない場合にはデフォルトファイルとして`messages`ファイルを読みに行くようになっています。  
+
+一点注意が必要で、全てのクライアントが適切にAccept-Languageを指定してくれるとは限らないということです。  
+どのように管理するかは自由ですが、上記忘れずにおかないと人によってはメッセージが違う、という不具合に繋がってしまいます。
+
+<a id="markdown-messagesファイルの設定" name="messagesファイルの設定"></a>
+##### messagesファイルの設定
+
+application.confの設定が終わったので、messagesファイルを作成します。  
+今回はen-USは省略して日本語とデフォルトだけ作成してみます。  
+
+まずはファイルを設定する前の状態で、表示をしてみましょう。  
+[http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)  
+入力なしで登録しようとすると以下のように表示されると思います。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/24_default_message.png" width="450">
+
+この未設定状態のメッセージが設定ファイルに記載するときのkey名になっているので、覚えておいてください。  
+動きが確認できたら、改めてmessagesファイルの設定を行っていきましょう。  
+
+`conf/messages/message`
+`conf/messages/message.ja`
+```
+# https://www.playframework.com/documentation/latest/ScalaI18N
+# 上記リンクに用意されているメッセージ一覧や利用方法が記載されています。
+error.invalid=入力が不正です
+error.required=入力は必須です
+error.maxLength={0}文字以内で入力してください
+
+# 未設定状態では、このkey名が画面に表示されるのでそれをみて設定をすれば良いです。
+constraint.required=*
+constraint.maxLength=最大{0}文字まで
+```
+
+これで今回必要な分の設定は完了です。  
+ブラウザからメッセージを確認してみてください。  
+[http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/25_ja_message.png" width="450">
+
+これでmessagesの設定は完了です。  
+
+ちなみにこの設定ファイルでのkey名ですが、これはリンク先のページもに一覧で記載されていますので、目を通していただけるとどんなものがあるのかわかると思います。  
+
+<a id="markdown-入力のヒント表示制御" name="入力のヒント表示制御"></a>
+#### 入力のヒント表示制御
 
 
 
