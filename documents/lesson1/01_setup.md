@@ -46,6 +46,7 @@
                 - [application.confの設定](#applicationconfの設定)
                 - [messagesファイルの設定](#messagesファイルの設定)
             - [入力のヒント表示制御](#入力のヒント表示制御)
+    - [更新ページの作成](#更新ページの作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
@@ -1129,6 +1130,54 @@ constraint.maxLength=最大{0}文字まで
 <a id="markdown-入力のヒント表示制御" name="入力のヒント表示制御"></a>
 #### 入力のヒント表示制御
 
+続いてFormHelperの制御を行っていきます。  
+今の実装だとconstraintsが全て表示されてしまって見辛いので、これを非表示にしてみます。  
+設定できる値は以下を参照ください。  
+[公式ドキュメント](https://www.playframework.com/documentation/ja/2.4.x/ScalaCustomFieldConstructors)
+
+`app/views/tweet/store.scala.html`
+```html
+@import controllers.tweet.TweetFormData
+@(form: Form[TweetFormData])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@main("登録画面") {
+  <h1>登録画面です</h1>
+  @helper.form(action = controllers.tweet.routes.TweetController.store()) {
+    @helper.CSRF.formField
+    @* contentはフリー入力系の項目なのでtextareaに変更しています。*@
+    @helper.textarea(form("content"),
+      @* 通常のhtml属性を設定。'を先頭につけて -> で値を渡します。 *@
+      'rows -> 7, 'cols -> 40,
+      @* helperに渡す属性です。 'をつけて->で値を渡すのは同様です。 *@
+      '_label -> "ツイート" ,'_showConstraints -> false
+    )
+    <input type="submit" value="登録">
+  }
+}
+```
+
+Tweetのcontentはinput textにするには文字数が多すぎるのでtextareに変更しました。  
+またtextareaのサイズ調整にrows, colsのhtmlのtextareタグにある属性を利用しています。  
+基本的にform helperへの値渡しは(symbol, value)の形式で渡します。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/27_symbol_tuple.png" width="450">
+
+'_label, '_showConstraintsはhelper側で用意されている属性です。  
+今回はこの2つを設定してみました。  
+では、この状態で動きを見てみましょう。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/28_store_html_no_constraints.png" width="450">
+
+このようにhtmlの属性と、helperの動きを制御できました。  
+
+登録を画面を通しての基本的はtwirl, formの利用方法はこれで完了です。  
+次はおさらいも兼ねて変更画面を作成してきましょう。
+
+<a id="markdown-更新ページの作成" name="更新ページの作成"></a>
+## 更新ページの作成
+
+更新ページの作成は今まで作ってきたものを参考に進めていけば、基本的には問題なく作成できます。  
+早速それぞれ必要なファイルを作成してみましょう。  
 
 
 

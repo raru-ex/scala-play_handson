@@ -7,7 +7,10 @@
   @helper.form(action = controllers.tweet.routes.TweetController.store()) {
     @* CSRFトークンの生成ヘルパーを呼び出している。これでいい感じにトークンが用意されます。 *@
     @helper.CSRF.formField
-    @helper.inputText(form("content"))
+    @helper.textarea(form("content"),
+      'rows -> 7, 'cols -> 40,
+      '_label -> "ツイート" ,'_showConstraints -> false
+    )
     <input type="submit" value="登録">
   }
 }
