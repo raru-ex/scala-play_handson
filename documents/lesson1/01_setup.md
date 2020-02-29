@@ -47,6 +47,8 @@
                 - [messagesファイルの設定](#messagesファイルの設定)
             - [入力のヒント表示制御](#入力のヒント表示制御)
     - [更新ページの作成](#更新ページの作成)
+        - [関連ファイル作成](#関連ファイル作成)
+    - [削除機能の作成](#削除機能の作成)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
@@ -698,7 +700,7 @@ playのルーティングは先勝ちになっているようで`/tweet/store`�
 
 `conf/routes`
 ```
-GET     /tweet/{<[0-9]+>id}         controllers.tweet.TweetController.show(id: Long)
+GET     /tweet/$id<[0-9]+>          controllers.tweet.TweetController.show(id: Long)
 ```
 
 これで`show`のルーティングでは0-9の数字しか受け付けなくなりました。  
@@ -1179,7 +1181,113 @@ Tweetのcontentはinput textにするには文字数が多すぎるのでtextare
 更新ページの作成は今まで作ってきたものを参考に進めていけば、基本的には問題なく作成できます。  
 早速それぞれ必要なファイルを作成してみましょう。  
 
+<a id="markdown-関連ファイル作成" name="関連ファイル作成"></a>
+### 関連ファイル作成
 
+`conf/routes`
+```
+GET     /tweet/$id<[0-9]+>/edit     controllers.tweet.TweetController.edit(id: Long)
+POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id: Long)
+```
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+  /**
+    * 編集画面を開く
+    */
+  def edit(id: Long) = Action { implicit request: Request[AnyContent] =>
+    tweets.find(_.id.exists(_ == id)) match {
+      case Some(tweet) =>
+        Ok(views.html.tweet.edit(
+          // データを識別するためのidを渡す
+          id,
+          // fillでformに値を詰める
+          form.fill(TweetFormData(tweet.content))
+        ))
+      case None        =>
+        NotFound(views.html.error.page404())
+    }
+  }
+
+  /**
+    * 対象のツイートを更新する
+    */
+  def update(id: Long) = Action { implicit request: Request[AnyContent] =>
+    form.bindFromRequest().fold(
+      (formWithErrors: Form[TweetFormData]) => {
+        BadRequest(views.html.tweet.edit(id, formWithErrors))
+      },
+      (data: TweetFormData) => {
+        tweets.find(_.id.exists(_ == id)) match {
+          case Some(tweet) =>
+            // indexは0からのため-1
+            tweets.update(id.toInt - 1, tweet.copy(content = data.content))
+            Redirect(controllers.tweet.routes.TweetController.list())
+          case None        =>
+            NotFound(views.html.error.page404())
+        }
+      }
+      )
+  }
+```
+
+今回は編集画面で利用するformにデフォルト値を埋め込んでいます。  
+その処理をしているのが`form.fill`です。  
+このメソッドにformとマッピングされている型のインスタンスを渡すことでformへ値を詰めることができます。  
+
+
+`app/views/tweet/list.scala.html`
+```html
+@import models.Tweet
+@(tweets: Seq[Tweet])
+
+@main("一覧画面") {
+  <h1>一覧画面です</h1>
+  <ul>
+    @for(tweet <- tweets) {
+    <li>
+      <a href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))">@tweet.content</a>
+    </li>
+      @* 編集ページへのリンク追加 *@
+    <li>
+      <a href="@controllers.tweet.routes.TweetController.edit(tweet.id.getOrElse(0))">
+        <button>編集</button>
+      </a>
+    </li>
+    }
+  </ul>
+}
+```
+
+`app/views/tweet/edit.scala.html`
+```html
+@import controllers.tweet.TweetFormData
+@* idを引数に追加 *@
+@(id: Long, form: Form[TweetFormData])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@main("編集画面") {
+  <h1>編集画面です</h1>
+  @helper.form(action = controllers.tweet.routes.TweetController.update(id)) {
+    @helper.CSRF.formField
+    @helper.textarea(form("content"),
+      'rows -> 7, 'cols -> 40,
+      '_label -> "ツイート" ,'_showConstraints -> false
+    )
+
+    @* hiddenは普通に埋め込み *@
+    <input type="hidden" value="@id" name="id">
+    <input type="submit" value="更新">
+  }
+}
+```
+
+input hiddenは[こちら](https://stackoverflow.com/questions/16911393/how-to-hide-a-text-field-in-play-framework)に記載されているような方法でも実現できるようですが、直感的にわかりづらいので通常のhtmlフォームを利用しています。  
+
+編集画面についてはこれで完了です。  
+一部変更はありましたが、ほとんど完了画面と同じですね。  
+
+<a id="markdown-削除機能の作成" name="削除機能の作成"></a>
+## 削除機能の作成
 
 <a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
 ## Twirlの共通コンポーネント作成

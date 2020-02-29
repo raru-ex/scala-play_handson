@@ -82,4 +82,43 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
     )
   }
 
+  /**
+    * 編集画面を開く
+    */
+  def edit(id: Long) = Action { implicit request: Request[AnyContent] =>
+    tweets.find(_.id.exists(_ == id)) match {
+      case Some(tweet) =>
+        Ok(views.html.tweet.edit(
+          // データを識別するためのidを渡す
+          id,
+          // fillでformに値を詰める
+          form.fill(TweetFormData(tweet.content))
+        ))
+      case None        =>
+        NotFound(views.html.error.page404())
+    }
+  }
+
+  /**
+    * 対象のツイートを更新する
+    */
+  def update(id: Long) = Action { implicit request: Request[AnyContent] =>
+    form.bindFromRequest().fold(
+      (formWithErrors: Form[TweetFormData]) => {
+        BadRequest(views.html.tweet.edit(id, formWithErrors))
+      },
+      (data: TweetFormData) => {
+        tweets.find(_.id.exists(_ == id)) match {
+          case Some(tweet) =>
+            // indexは0からのため-1
+            tweets.update(id.toInt - 1, tweet.copy(content = data.content))
+            Redirect(controllers.tweet.routes.TweetController.list())
+          case None        =>
+            NotFound(views.html.error.page404())
+        }
+      }
+      )
+  }
+
+
 }
