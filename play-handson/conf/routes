@@ -11,6 +11,7 @@ GET     /tweet/store                controllers.tweet.TweetController.register
 POST    /tweet/store                controllers.tweet.TweetController.store
 GET     /tweet/$id<[0-9]+>/edit     controllers.tweet.TweetController.edit(id: Long)
 POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id: Long)
+POST    /tweet/delete               controllers.tweet.TweetController.delete
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

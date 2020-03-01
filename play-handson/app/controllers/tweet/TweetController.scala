@@ -6,8 +6,6 @@ import play.api.mvc.BaseController
 import play.api.mvc.Request
 import play.api.mvc.AnyContent
 import models.Tweet
-import play.api.http.DefaultHttpErrorHandler
-import views.html.defaultpages.notFound
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
@@ -120,5 +118,20 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
       )
   }
 
+  /**
+   * 対象のデータを削除する
+   */
+  def delete() = Action { implicit request: Request[AnyContent] =>
+    // requestから直接値を取得するサンプル
+    val idOpt = request.body.asFormUrlEncoded.get("id").headOption
+    // idがあり、値もあるときに削除
+    tweets.find(_.id.map(_.toString) == idOpt) match {
+      case Some(tweet) =>
+        tweets -= tweet
+        Ok(views.html.tweet.list(tweets.toSeq))
+      case None        =>
+        NotFound(views.html.error.page404())
+    }
+  }
 
 }

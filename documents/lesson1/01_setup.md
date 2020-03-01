@@ -47,13 +47,15 @@
                 - [messagesファイルの設定](#messagesファイルの設定)
             - [入力のヒント表示制御](#入力のヒント表示制御)
     - [更新ページの作成](#更新ページの作成)
-        - [関連ファイル作成](#関連ファイル作成)
+        - [実装](#実装)
     - [削除機能の作成](#削除機能の作成)
+        - [実装](#実装-1)
     - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
             - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
             - [利用するエラーハンドラをPlayに設定](#利用するエラーハンドラをplayに設定)
+        - [Option[String]のキャスト事故](#optionstringのキャスト事故)
 
 <!-- /TOC -->
 
@@ -1183,8 +1185,8 @@ Tweetのcontentはinput textにするには文字数が多すぎるのでtextare
 更新ページの作成は今まで作ってきたものを参考に進めていけば、基本的には問題なく作成できます。  
 早速それぞれ必要なファイルを作成してみましょう。  
 
-<a id="markdown-関連ファイル作成" name="関連ファイル作成"></a>
-### 関連ファイル作成
+<a id="markdown-実装" name="実装"></a>
+### 実装
 
 `conf/routes`
 ```
@@ -1291,6 +1293,77 @@ input hiddenは[こちら](https://stackoverflow.com/questions/16911393/how-to-h
 <a id="markdown-削除機能の作成" name="削除機能の作成"></a>
 ## 削除機能の作成
 
+CRUDの最後に、Delete機能を作成していきます。  
+削除機能はシンプルなのでサクッと進めていきましょう。  
+
+<a id="markdown-実装-1" name="実装-1"></a>
+### 実装
+
+`conf/routes`
+```
+POST    /tweet/delete               controllers.tweet.TweetController.delete
+```
+
+たまにGETにしてurlにidを入れるような削除を見かけますが、クローラーにアクセスされるとデータが消えるという障害に繋がるのでbodyでidを渡すようにしています。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+/**
+ * 対象のデータを削除する
+ */
+def delete() = Action { implicit request: Request[AnyContent] =>
+  // requestから直接値を取得するサンプル
+  val idOpt = request.body.asFormUrlEncoded.get("id").headOption
+  // idがあり、値もあるときに削除
+  tweets.find(_.id.map(_.toString) == idOpt) match {
+    case Some(tweet) =>
+      tweets -= tweet
+      Ok(views.html.tweet.list(tweets.toSeq))
+    case None        =>
+      NotFound(views.html.error.page404())
+  }
+}
+```
+
+今までのやり方と同じだと少し退屈なので、requestから直接値を取る書き方にしてみました。  
+idのtweetsからのfindの仕方が汚いですが、パッといいやり方が浮かびませんでした...  
+
+`app/views/tweet/list.scala.html`
+```html
+@import models.Tweet
+@(tweets: Seq[Tweet])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@main("一覧画面") {
+  <h1>一覧画面です</h1>
+  <ul>
+    @for(tweet <- tweets) {
+      @* 削除用にフォームを追加 *@
+      @helper.form(action = controllers.tweet.routes.TweetController.delete()) {
+      @helper.CSRF.formField
+      <input type="hidden" value="@tweet.id" name="id">
+      <li>
+        <a href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))">@tweet.content</a>
+      </li>
+      <li>
+        <a href="@controllers.tweet.routes.TweetController.edit(tweet.id.getOrElse(0))">
+          <button>編集</button>
+        </a>
+      </li>
+      <li>
+          <input type="submit" value="削除">
+      </li>
+      }
+    }
+  </ul>
+}
+```
+
+idをbodyに入れたいのでformで囲ってpostしています。  
+今回の機能は画面がないので、各自ローカルで動作をみてみてください。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)
+
+削除が行えていればOKです。
+
 <a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
 ## Twirlの共通コンポーネント作成
 
@@ -1385,3 +1458,50 @@ play.http.errorHandler = "http.CustomErrorHandler"
 アクセすると以下の画面になっていれば実装完了です。  
 
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/18_on_notfound.png" width="450">
+
+<a id="markdown-optionstringのキャスト事故" name="optionstringのキャスト事故"></a>
+### Option[String]のキャスト事故
+
+資料を作成する中でハマったOptionの不思議な動きを紹介します。  
+この動きは削除機能を作るときにOption同士を比較しようとして、ハマってしまいました。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/29_option_success.png" width="450">
+
+まず同じ型のOption同士を比較してみました。  
+これはどうやら動くということが確認できている状態です。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/30_option_asInstanceOf_false.png" width="450">
+
+asInstnaceOfで変換をかけてみた状態です。  
+比較が一致しなくなってしまったので、REPL上では同じ値は参照も同一になってしまってたまたま一致しているのでは？  と思い、valとvarで宣言をしたものを比較してみています。  
+しかしこの場合には答えが一致してしまいました。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/31_set_but_multi_long.png" width="450">
+
+ならば回りくどいがSetで排除してやろうと思い、Setに入れたところSetに1が二つ格納できてしまいました。  
+これは本格的によくわからない、という状態です。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/32_long_but_string.png" width="450">
+
+そしてこれがSeqにして値を取り出してみたものです。  
+データを取得するときに型の不一致でエラーになりました。  
+どうやら見た目上はLongっぽく振る舞われているのですが、実体はStringのまま変更されていないようでした。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/33_string_to_long.png" width="450">
+
+ただ、本来はstringをasInstanceOfでLongに変換することはできないようです。  
+数字以外も入るので、当然といえば当然ですね。  
+これがOptionでラップされることで、処理自体は通るようになってしまうという挙動みたいです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/34_seq_string_to_long1.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/35_seq_string_to_long2.png" width="450">
+
+Optionに限らずモナドはできてしまうのかもしれませんね。  
+
+どうやらasInstanceOfは実際に値を変換するというものではなくて、システム上指定した型として扱うということを宣言するものに近いみたいです。  
+それがモナドのように型を被せてしまうと内側まで検証できずに、そのタイミングでは通ってしまうようです。  
+
+事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
+あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
+
+
