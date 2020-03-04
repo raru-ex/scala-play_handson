@@ -53,6 +53,8 @@
     - [Twirlの修正/デザイン適用](#twirlの修正デザイン適用)
         - [cssやjsを全体に適用する](#cssやjsを全体に適用する)
         - [各ページごとにjs, cssを読み込めるように設定する。](#各ページごとにjs-cssを読み込めるように設定する)
+            - [listページ](#listページ)
+            - [storeページ](#storeページ)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
             - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
@@ -1453,6 +1455,54 @@ cssについても同様です。
 <a id="markdown-各ページごとにjs-cssを読み込めるように設定する" name="各ページごとにjs-cssを読み込めるように設定する"></a>
 ### 各ページごとにjs, cssを読み込めるように設定する。
 
+次は各ページごとのcss, jsを読み込めるようにしてみましょう。  
+実は以下のよくある使い方ページに実装の仕方が書いてあります。  
+[よくある使い方](https://www.playframework.com/documentation/2.8.x/ScalaTemplateUseCases#moreScripts-and-moreStyles-equivalents)
+
+まずはscript, cssを受け取れるように`main.scala.html`を修正します。  
+
+`app/views/main.scala.html`
+```
+@* js, cssを受け取れるように引数を追加。渡さなくてもいいようにデフォルト値も設定 *@
+@(
+  title:   String,
+  scripts: Html = HTML(""),
+  csses:   Html = HTML(""),
+)(content: Html)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>@title</title>
+        @* resetのcssを適用 *@
+        <link href="https://unpkg.com/sanitize.css" rel="stylesheet"/>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+        @* 引数の展開 *@
+        @csses
+    </head>
+    <body>
+        @content
+
+      <script src="@routes.Assets.versioned("javascripts/main.js")" type="text/javascript"></script>
+      @* 引数の展開 *@
+      @scripts
+    </body>
+</html>
+```
+
+引数を追加して、適当な場所に展開されるようにしています。  
+
+あとはこれを利用してページごとにcssを作成するだけです。  
+今回はざっくりstoreとlistページのcssを作成してみましょう。  
+jsについては特に使う必要がないので、今回は省略します。  
+
+<a id="markdown-listページ" name="listページ"></a>
+#### listページ
+
+
+<a id="markdown-storeページ" name="storeページ"></a>
+#### storeページ
 
 
 
