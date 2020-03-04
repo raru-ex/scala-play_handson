@@ -6,7 +6,7 @@
 *@
 @(tweets: Seq[Tweet])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
-@content("一覧画面") {
+@main("一覧画面") {
   <h1>一覧画面です</h1>
   <ul>
     @for(tweet <- tweets) {

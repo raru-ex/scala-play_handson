@@ -1449,6 +1449,12 @@ cssについても同様です。
 <link href="https://unpkg.com/sanitize.css" rel="stylesheet"/>
 ```
 
+設定を追加したので、これが読み込まれていることを確認してみましょう。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)  
+以下のように読み込まれていれがOKです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/36_link_rel_resetcss.png" width="450">
+
 このようにサイト全体で適用したいものはlayoutのテンプレートになっているファイルを変更することで設定可能です。  
 
 
