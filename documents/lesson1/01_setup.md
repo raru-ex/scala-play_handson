@@ -50,7 +50,9 @@
         - [実装](#実装)
     - [削除機能の作成](#削除機能の作成)
         - [実装](#実装-1)
-    - [Twirlの共通コンポーネント作成](#twirlの共通コンポーネント作成)
+    - [Twirlの修正/デザイン適用](#twirlの修正デザイン適用)
+        - [cssやjsを全体に適用する](#cssやjsを全体に適用する)
+        - [各ページごとにjs, cssを読み込めるように設定する。](#各ページごとにjs-cssを読み込めるように設定する)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
             - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
@@ -1255,7 +1257,7 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
       @* 編集ページへのリンク追加 *@
     <li>
       <a href="@controllers.tweet.routes.TweetController.edit(tweet.id.getOrElse(0))">
-        <button>編集</button>
+        <button type="button">編集</button>
       </a>
     </li>
     }
@@ -1346,7 +1348,7 @@ idのtweetsからのfindの仕方が汚いですが、パッといいやり方�
       </li>
       <li>
         <a href="@controllers.tweet.routes.TweetController.edit(tweet.id.getOrElse(0))">
-          <button>編集</button>
+          <button type="button">編集</button>
         </a>
       </li>
       <li>
@@ -1364,8 +1366,95 @@ idをbodyに入れたいのでformで囲ってpostしています。
 
 削除が行えていればOKです。
 
-<a id="markdown-twirlの共通コンポーネント作成" name="twirlの共通コンポーネント作成"></a>
-## Twirlの共通コンポーネント作成
+<a id="markdown-twirlの修正デザイン適用" name="twirlの修正デザイン適用"></a>
+## Twirlの修正/デザイン適用
+
+実際にシステムを作る際にはcssやjsを利用して構築していきますよね。  
+ここではふんわりにはなりますが、cssやjsのtwirlでの利用をしてみたいと思います。  
+
+<a id="markdown-cssやjsを全体に適用する" name="cssやjsを全体に適用する"></a>
+### cssやjsを全体に適用する
+
+css, jsは全体に適用するケースとページごとに適用するケースがあると思います。  
+Twirlの構成を見るのも含めて、まずは全体に適用するところからやっていきましょう。  
+
+さっそく全体のレイアウトを構成しているファイルからみていきます。  
+
+`app/views/main.scala.html`
+```
+@(title: String)(content: Html)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>@title</title>
+        @* resetのcssを適用 *@
+        <link href="https://unpkg.com/sanitize.css" rel="stylesheet"/>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+
+    </head>
+    <body>
+        @content
+
+      <script src="@routes.Assets.versioned("javascripts/main.js")" type="text/javascript"></script>
+    </body>
+</html>
+```
+
+デフォルトのPlayFrameworkでは`main.scala.html`が全体のlayoutとして利用されています。  
+これが今までstore, listなどのページで書かれていた以下の部分になるわけです。  
+```
+@main("一覧画面") {
+}
+```
+
+よくみると`<body>`の下に`@content`という記載があります。  
+この変数は`main.scala.html`の上部で宣言されている引数になります。  
+```
+@* ここ *@
+@(title: String)(content: Html)
+```
+
+`"一覧画面"`が`title`、各Twirlで記述されているHTMLがcontentに格納されることで全体のページが作られるという仕組みです。  
+`{}`の部分が引数というのが最初はわかりづらいですがscalaでは`{}`で引数を渡せ ます。  
+普段使っているmapメソッドも同じですよね。  
+`Seq(1,2,3).map { v => print(v) }` みたいに書くときと同じです。  
+
+ちなみにこのファイルが`content.scala.html`という名前だと、以下のようになります。  
+```
+@content("一覧画面") {
+}
+```
+
+このmainファイルは普通のhtmlとほぼ同じなので、どうすればファイルが読み込めるかはわかりやすいですね。  
+例えばjavascriptは以下のように読み込まれています。  
+```
+<script src="@routes.Assets.versioned("javascripts/main.js")" type="text/javascript"></script>
+```
+
+ここで`src`属性に`routes.Assets.versioned()`という記述がありますが、これは他のアクションと同様にroutesにしっかりと記述されています。  
+```
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+```
+
+routesにあるようにデフォルトでは`public`フォルダと関連づけられており`routes.Assets.versioned("javascripts/main.js")`は`public/javascripts/main.js`を対象に読み込むということになります。  
+またversionedはjs-hogehogeのようなdigestが設定されたファイルも処理できるような作りになっています。  
+
+cssについても同様です。  
+ちなみに今回はreset.cssの中の一つである`sanitize.css`を外部から読み込んでいます。  
+```
+<link href="https://unpkg.com/sanitize.css" rel="stylesheet"/>
+```
+
+このようにサイト全体で適用したいものはlayoutのテンプレートになっているファイルを変更することで設定可能です。  
+
+
+<a id="markdown-各ページごとにjs-cssを読み込めるように設定する" name="各ページごとにjs-cssを読み込めるように設定する"></a>
+### 各ページごとにjs, cssを読み込めるように設定する。
+
+
+
 
 <a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
