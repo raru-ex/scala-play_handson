@@ -54,12 +54,12 @@
         - [cssやjsを全体に適用する](#cssやjsを全体に適用する)
         - [各ページごとにjs, cssを読み込めるように設定する。](#各ページごとにjs-cssを読み込めるように設定する)
             - [listページ](#listページ)
-            - [storeページ](#storeページ)
     - [おまけ](#おまけ)
         - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
             - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
             - [利用するエラーハンドラをPlayに設定](#利用するエラーハンドラをplayに設定)
         - [Option[String]のキャスト事故](#optionstringのキャスト事故)
+- [TODO](#todo)
 
 <!-- /TOC -->
 
@@ -1506,11 +1506,181 @@ jsについては特に使う必要がないので、今回は省略します。
 <a id="markdown-listページ" name="listページ"></a>
 #### listページ
 
+まずは一覧ページの調整をしてみます。  
+レイアウト自体はおまけなのと、css, htmlはPlayの本題からずれるので細かいことは気にせず実装していきます。  
 
-<a id="markdown-storeページ" name="storeページ"></a>
-#### storeページ
+`app/views/tweet/list.scala.html`
+```html
+@import models.Tweet
+@(tweets: Seq[Tweet])(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
 
+@* 本ページに必要なcssを読み込み *@
+@css = {
+  <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/list.css")">
+}
 
+@* 本ページに必要なjsを読み込み *@
+@script = {
+  <script src="@routes.Assets.versioned("javascripts/list.js")" type="text/javascript"></script>
+}
+
+@* 読み込んだcss,jsをmainへ渡して適切な場所でロード *@
+@main(
+  title  = "一覧画面",
+  script = script,
+  css    = css,
+) {
+  @* 全部liで不適切だったので、それらしく修正 *@
+  <h1>一覧画面です</h1>
+    @for(tweet <- tweets) {
+      <div class="card" data-href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))">
+        <div class="card_content">
+          @tweet.content
+        </div>
+        <div class="card_footer">
+          <div class="card_footer_item">
+            <a href="@controllers.tweet.routes.TweetController.edit(tweet.id.getOrElse(0))">
+              <i class="far fa-edit"></i>
+            </a>
+          </div>
+          <div class="card_footer_item">
+            @helper.form(action = controllers.tweet.routes.TweetController.delete()) {
+              @helper.CSRF.formField
+              <input type="hidden" value="@tweet.id" name="id">
+              <i class="far fa-trash-alt delete"></i>
+            }
+          </div>
+        </div>
+      </div>
+    }
+}
+```
+
+本題はこのページにだけ必要なcss, jsを読み込んでいる部分になります。  
+一度htmlとして変数に格納して、名前付き引数でそれぞれ渡しています。  
+名前付き引数にする必要はないのですが、css,jsどちらが先か気にしなくて良くてわかりやすいので名前付きで渡しました。  
+
+またhtmlが全てliのまま突き進んでしまっていて流石に酷かったので、少しそれらしく調整をしています。  
+
+次はここで読み込んでいるcssを作成します。  
+
+`public/stylesheets/list.css`
+```css
+.card {
+  border-bottom: 1px solid rgb(56, 68, 77);
+  width:         100%;
+  padding:       5px;
+}
+
+.card .card_content {
+  padding: 5px;
+}
+
+.card_footer {
+  text-align: right;
+}
+
+.card_footer .card_footer_item {
+  display:     inline-block;
+  margin-left: 5px;
+}
+
+.card_footer .card_footer_item a:link,
+.card_footer .card_footer_item i {
+  color:     white;
+  font-size: 0.9em;
+}
+```
+
+次にjsです。  
+
+`public/javascripts/list.js`
+```javascript
+// DOM読み込みが完了してから処理
+document.addEventListener("DOMContentLoaded",function(){
+  // HTMLCollectionを配列に変換しつつ削除アイコンを取得
+  const deleteActions = Array.from(
+    document.getElementsByClassName("delete")
+  );
+
+  // それぞれのアイコンに削除フォーム実行のonclickイベントを設定
+  deleteActions.forEach(action => {
+    // eventを取得して、クリックされた要素(target)の親要素であるformをsubmitする
+    action.addEventListener("click", (e) => {
+      e.target.parentNode.submit();
+    });
+  });
+});
+```
+
+今回削除用formのsubmitボタンを削除して、バケツアイコンを利用するようにしているので、jsでsubmit処理を送るように実装しました。  
+これで一覧ページに必要なファイルはそろった状態です。  
+
+ただデザイン調整にあたって全体のトーンを直したいので、mainへも手を入れます。  
+
+`app/views/main.scala.html`
+```html
+@(
+  title:  String,
+  script: Html = Html(""),
+  css:    Html = Html(""),
+)(content: Html)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>@title</title>
+        <link href="https://unpkg.com/sanitize.css" rel="stylesheet"/>
+        @* NotoSansとfont-awesomeを追加 *@
+        <link rel="stylesheet" href="https://fonts.googleapis.com/earlyaccess/notosansjapanese.css">
+        <link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+        @* 引数の展開 *@
+        @css
+    </head>
+    <body>
+        @content
+
+      <script src="@routes.Assets.versioned("javascripts/main.js")" type="text/javascript"></script>
+      @* 引数の展開 *@
+      @script
+    </body>
+</html>
+```
+
+mainのhtmlでは、コメントにあるようにWebフォントとFontAwesomeを導入しています。  
+それに伴ってcssも修正があります。  
+
+`public/stylesheets/main.css`
+```css
+body {
+  background-color: rgb(21, 32, 43);
+  color:            white;
+  font-family:      "Noto Sans Japanese", sans-serif;
+}
+
+h1 {
+  margin:        0;
+  padding:       20px 10px;
+  border-bottom: 1px solid rgb(56, 68, 77);
+}
+```
+
+全体の色と文字を設定しました。  
+h1もそのままだと使いづらかったので少し手を入れています。  
+
+ここまで設定ができたら、ページを確認してみましょう。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)
+
+以下のようになっていればOKです。  
+
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/37_list_redesign.png" width="450">
+
+他のページも確認して、list.css, list.jsが読み込まれていないことを確認してみてくださいね。  
+
+簡単にはなりますがTwirlへのcss, javascriptの適用の仕方は以上になります。  
 
 <a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
@@ -1649,4 +1819,8 @@ Optionに限らずモナドはできてしまうのかもしれませんね。
 事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
 あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
 
+<a id="markdown-todo" name="todo"></a>
+# TODO
 
+- delete処理の成功時をredirectに修正
+- welcomeページのroutesを削除して一覧ページに飛ぶようにする

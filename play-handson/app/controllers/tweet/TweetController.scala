@@ -128,10 +128,9 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
     tweets.find(_.id.map(_.toString) == idOpt) match {
       case Some(tweet) =>
         tweets -= tweet
-        Ok(views.html.tweet.list(tweets.toSeq))
+        Redirect(controllers.tweet.routes.TweetController.list())
       case None        =>
         NotFound(views.html.error.page404())
     }
   }
-
 }
