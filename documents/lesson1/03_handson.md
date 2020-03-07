@@ -1473,5 +1473,5 @@ h1もそのままだと使いづらかったので少し手を入れています
 簡単にはなりますがTwirlへのcss, javascriptの適用の仕方は以上になります。  
 
 
-[< 環境セットアップへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/01_introduction.md)  
-[おまけへ進む >](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/03_handson.md)
+[< 環境セットアップへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/02_setup.md)  
+[おまけへ進む >](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/04_extra.md)
