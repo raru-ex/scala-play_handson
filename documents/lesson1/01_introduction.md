@@ -4,7 +4,7 @@
 <!-- TOC -->
 
 - [目次](#目次)
-- [Lesson1](#lesson1)
+- [はじめに](#はじめに)
 - [基本情報](#基本情報)
     - [sbtとは](#sbtとは)
     - [Playframeworkとは](#playframeworkとは)
@@ -13,14 +13,14 @@
 
 <!-- /TOC -->
 
-<a id="markdown-lesson1" name="lesson1"></a>
-# Lesson1
+<a id="markdown-はじめに" name="はじめに"></a>
+# はじめに
 
 Lesson1ではPlayを利用して、簡単なCRUDを作成していきます。  
 DB接続やその他周辺技術を利用すると複雑度が増してしまうため、この章ではDBは利用せずに機能を実装していきます。  
 まずはPlayframeworkをシンプルな状態のまま利用して、Playframeworkに慣れていきましょう。  
   
-またScala-Playで開発を行うにあたり、必要となる基本的な知識・言葉についても簡単にではありますが補足させていただきます。  
+またScala-Playで開発を行うにあたり、必要となる基本的な知識・言葉についても非常に簡単にではありますが補足させていただきます。  
 既にご存知の内容であれば、基本情報のブロックはスキップしていただいて問題ございません。  
 
 <a id="markdown-基本情報" name="基本情報"></a>
@@ -79,11 +79,11 @@ ScalaでのWeb開発では利用率が高く、参考情報も豊富なため今
 - Visual Studio Code & metals
 - Vim or Emacs & metals
 
-正直なところ、IDEについてはほぼほぼIntellij IDEAで統一されている印象です。  
+IDEについてはほぼほぼIntellij IDEAで統一されている印象です。  
 Community EditionでもScala Pluginを導入すれば、個人で開発する範囲であればあまり不自由なく開発が行えると思います。  
 
 他の選択肢として、最近はMetalsというScala向けのLanguage Serverの開発が進んでおり、LSPを利用した連携機能を持つエディタであればかなり快適に開発を行うことも可能です。  
-事実は私は個人ではVimとMetalsを利用して開発を行っています。  
+事実、私はVimとMetalsを利用して開発を行っています。  
 
 個人的には、強いこだわりがない限りは`IntelliJ IDEA`の利用をオススメします。  
 

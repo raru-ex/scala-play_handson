@@ -17,15 +17,21 @@
 <a id="markdown-環境のセットアップ" name="環境のセットアップ"></a>
 # 環境のセットアップ
 
+この章ではIntelliJ IDEAとPlayのセットアップを行います。  
+既に完了されている方はスキップしていただいて問題ありません。  
+
 <a id="markdown-注意事項" name="注意事項"></a>
 ## 注意事項
 
-本ハンズオンでは現在(2020年02月)時点で最新である、Playの2.8を利用してハンズオンを進めていきます。  
+本ハンズオンは現在(2020年02月)時点で最新である、Play2.8を利用してハンズオンを進めていきます。  
+
 また本ハンズオンは以下を前提として構築されています。  
-前提となっている環境と差異がある方は、各々読みかえていただいたり各環境ごとに適切にセットアップを行ってください。  
 
 1. マシンにsbtがインストールされている
 2. Mac OSのパソコンを利用している
+
+
+前提となっている環境と差異がある方は各々読みかえていただいたり、適宜セットアップを行ってください。  
 
 [sbt インストール方法 Windowsの場合](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Windows.html)  
 [sbt インストール方法 Macの場合](https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Mac.html)  
@@ -41,15 +47,16 @@
 <a id="markdown-playの導入" name="playの導入"></a>
 ## Playの導入
 
-sbtのコマンドからPlayのシードプロジェクトを作成していきます。  
-任意のプロジェクトディレクトリを作成して、以下のコマンドを実行してください。  
+早速ですがPlayの導入を行っていきます。  
+sbtのコマンドからPlayのシードプロジェクトを作成してみましょう。  
 
-あくまで例になりますがMacでの作業をイメージして作成していきます。  
+任意のプロジェクトディレクトリを作成して、以下のコマンドを実行してください。  
+あくまで例になりますが、以下にMacでの作業をイメージしてコマンドを記載していきます。  
 
 ```sh
+# 参照: https://www.playframework.com/documentation/2.8.x/NewApplication
 $ cd ~/Documents/workspace/
 $ sbt new playframework/play-scala-seed.g8
-# 参照: https://www.playframework.com/documentation/2.8.x/NewApplication
 # ... 省略
 
 This template generates a Play Scala project
@@ -60,7 +67,7 @@ organization [com.example]: com.example
 
 name部分でプロジェクト名を指定しています。  
 organizationは個人のドメインをお持ちの方は、その逆順で記載しても良いです。  
-今回はサンプルのため`com.example`を指定しています。  
+今回はサンプルのためデフォルトのままの `com.example`を指定しています。  
 
 これでコマンドを実行したフォルダ以下に`name`で指定したプロジェクト名のフォルダが作成されます。  
 
@@ -99,15 +106,15 @@ $ sbt run
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/01_play_hello_world.png" width="450">
 
 導入自体はこれで完了になります。  
-Scalaは環境も整備されてきており、誰でも比較的簡単に始めることができる環境が整ってきているのではないでしょうか。  
+簡単で良いですね。  
 
 <a id="markdown-統合開発環境intellij-ideaのセットアップ" name="統合開発環境intellij-ideaのセットアップ"></a>
 ## 統合開発環境(IntelliJ IDEA)のセットアップ
 
-今回はIntelliJ IDEAの無償版を利用したセットアップの手順を記載していきます。  
-Vimについては自己責任で出来る人しかいないと思うので、割愛します。  
-Visual Studio Codeについては、個人的にmetalsのフルパワーがみてみたいので命尽きる前のいつの日にか手順を作ってみたいと思っております。  
+今回はIntelliJ IDEA 無償版のセットアップの手順を記載していきます。  
 
+Visual Studio Code + Metalsについては、いつの日にか手順を作ってみたいと思っております。  
+今回は作っておりません。  
 
 <a id="markdown-ideaのダウンロード" name="ideaのダウンロード"></a>
 ### IDEAのダウンロード

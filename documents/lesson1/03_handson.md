@@ -49,13 +49,66 @@
 <a id="markdown-ハンズオン" name="ハンズオン"></a>
 # ハンズオン
 
-この章からCRUD機能開発を進めていきます。  
+この章からCRUD機能の開発を進めていきます。  
+
+## PlayFrameworkの基本的なフォルダ構成
+
+開発に入る前に、Playのフォルダ構成とその中からよく利用する主なファイルについて簡単に説明します。  
+
+```sh
+.
+├── app
+│   ├── controllers
+│   │   └─ HomeController.scala
+│   └── views
+│       ├── error
+│       ├── index.scala.html
+│       ├── main.scala.html
+│       └── main.scala.html
+├── build.sbt
+├── conf
+│   ├── application.conf
+│   ├── logback.xml
+│   ├── messages
+│   └── routes
+├── logs
+│   └── application.log
+├── project
+│   ├── build.properties
+│   └── plugins.sbt
+├── public
+│   ├── images
+│   ├── javascripts
+│   └── stylesheets
+├── target
+└── test
+```
+
+基本的に`scala`ファイルは`app`以下に配置していきます。  
+`views`もこのapp以下に配置されていますね。   
+
+`conf`には設定関連が配置されています。  
+`application.conf`はメインの設定ファイルで、システムから利用する設定情報などを記載します。記載された設定は`controller`にDIされたconfigインスタンスから利用できます。  
+`logback.xml`はログ出力フォーマットや出力条件などを設定するものでplayで採用されている`logback`というライブラリのための設定ファイルになります。  
+`messages`は多言語対応や、メッセージ管理用の設定でバリデーションメッセージなど各メッセージの管理に利用できます。  
+`routes`はルーティング情報を記載するファイルです。分割して管理することなども可能です。システムから利用される際には、このファイルの情報がコンパイルされたClassファイルが利用されるようになっています。  
+
+`project`以下にはsbt系の設定ファイルを切り出して配置します。  
+ここで定義したものを`build.sbt`で読み込んで利用したりします。  
+例えばscalafmtなどのプラグインを`plugins.sbt`に追加して利用したりします。  
+
+`build.sbt`はプロジェクトのビルド設定ファイルです。  
+ビルドするための依存ライブラリを記述したり、デプロイ設定を記載したりします。  
+またsbt shellにコマンドを追加するときにも、このファイルに追加を行っていきます。  
+
+概ねフォルダやファイル名が示す通りですが、このような構成になっています。  
+ただ開発するだけであれば、app以下, routesあたりが一番よく触るファイルになると思います。  
 
 <a id="markdown-一覧ページ作成" name="一覧ページ作成"></a>
 ## 一覧ページ作成
 
-それではPlayの機能を触りながら、簡単に一覧ページから作成していきましょう。  
-今回はPlayに集中するためDBへのアクセスは行わずに作成してみようと思います。  
+それではPlayの機能を触りながら、一覧ページから作成していきましょう。  
+前述の通り、今回はPlayに集中するためDBへのアクセスは行わずに作成します。  
 
 <a id="markdown-ルーティング" name="ルーティング"></a>
 ### ルーティング
