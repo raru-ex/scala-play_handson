@@ -149,4 +149,4 @@ Optionに限らずモナドはできてしまうのかもしれませんね。
 事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
 あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
 
-[< ハンズオンへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/01_introduction.md)  
+[< ハンズオンへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/03_handson.md)  
