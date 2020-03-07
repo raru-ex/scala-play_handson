@@ -21,6 +21,7 @@
 ) {
   <h1>一覧画面です</h1>
     @for(tweet <- tweets) {
+      @* cardクリック時の遷移先を保持するためにdata-href属性を作成して設定  *@
       <div class="card" data-href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))">
         <div class="card_content">
           @tweet.content
