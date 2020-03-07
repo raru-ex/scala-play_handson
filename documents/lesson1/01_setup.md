@@ -668,6 +668,33 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 ステータスコードが404で、作成したページが表示されていることが確認できますね。  
 エラーページを作成する方法は以上です。  
 
+### HomeControllerから一覧へリダイレクト
+
+ここまでできたら`/`ページへのアクセスを一覧ページリダイレクトしてみましょう。  
+
+`app/controllers/HomeController.scala`
+```scala
+package controllers
+
+import javax.inject._
+import play.api._
+import play.api.mvc._
+
+@Singleton
+class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+
+  def index() = Action { implicit request: Request[AnyContent] =>
+    Redirect(tweet.routes.TweetController.list())
+  }
+}
+```
+
+ここでは自分自身がcontrollersパッケージにいるので、リバースルーティングはその先にあるパッケージからの記載になります。  
+今回は `controllers.tweet.routes....` を呼び出したいので `tweet.routes...` で動作します。  
+
+これでリダイレクトの設定は完了です。  
+こういうところハマりやすいので、参考になれば幸いです。  
+
 <a id="markdown-登録ページの作成" name="登録ページの作成"></a>
 ## 登録ページの作成
 
@@ -960,8 +987,9 @@ def store() = Action { implicit request: Request[AnyContent] =>
       tweets += Tweet(Some(tweets.size + 1L), tweetFormData.content)
       // 登録が完了したら一覧画面へリダイレクトする
       Redirect("/tweet/list")
-      // 以下のような書き方も可能です。twirl側と同じですね
-      // Redirect(controllers.tweet.routes.TweetController.list())
+      // 以下のような書き方も可能です。基本的にはtwirl側と同じです
+      // 自分自身がcontrollers.tweetパッケージに属しているのでcontrollers.tweetの部分が省略されています。
+      // Redirect(routes.TweetController.list())
     }
   )
 }
@@ -1230,7 +1258,7 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
           case Some(tweet) =>
             // indexは0からのため-1
             tweets.update(id.toInt - 1, tweet.copy(content = data.content))
-            Redirect(controllers.tweet.routes.TweetController.list())
+            Redirect(routes.TweetController.list())
           case None        =>
             NotFound(views.html.error.page404())
         }
@@ -1322,7 +1350,8 @@ def delete() = Action { implicit request: Request[AnyContent] =>
   tweets.find(_.id.map(_.toString) == idOpt) match {
     case Some(tweet) =>
       tweets -= tweet
-      Ok(views.html.tweet.list(tweets.toSeq))
+      // 削除が完了したら一覧ページへリダイレクト
+      Redirect(routes.TweetController.list())
     case None        =>
       NotFound(views.html.error.page404())
   }
@@ -1533,6 +1562,7 @@ jsについては特に使う必要がないので、今回は省略します。
   @* 全部liで不適切だったので、それらしく修正 *@
   <h1>一覧画面です</h1>
     @for(tweet <- tweets) {
+      @* cardクリック時の遷移先を保持するためにdata-href属性を作成して設定  *@
       <div class="card" data-href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))">
         <div class="card_content">
           @tweet.content
@@ -1570,6 +1600,7 @@ jsについては特に使う必要がないので、今回は省略します。
   border-bottom: 1px solid rgb(56, 68, 77);
   width:         100%;
   padding:       5px;
+  cursor:        pointer;
 }
 
 .card .card_content {
@@ -1589,6 +1620,7 @@ jsについては特に使う必要がないので、今回は省略します。
 .card_footer .card_footer_item i {
   color:     white;
   font-size: 0.9em;
+  cursor:    pointer;
 }
 ```
 
@@ -1599,21 +1631,31 @@ jsについては特に使う必要がないので、今回は省略します。
 // DOM読み込みが完了してから処理
 document.addEventListener("DOMContentLoaded",function(){
   // HTMLCollectionを配列に変換しつつ削除アイコンを取得
-  const deleteActions = Array.from(
+  Array.from(
     document.getElementsByClassName("delete")
-  );
-
-  // それぞれのアイコンに削除フォーム実行のonclickイベントを設定
-  deleteActions.forEach(action => {
+    // それぞれのアイコンに削除フォーム実行のonclickイベントを設定
+  ).forEach(action => {
     // eventを取得して、クリックされた要素(target)の親要素であるformをsubmitする
     action.addEventListener("click", (e) => {
-      e.target.parentNode.submit();
+      e.currentTarget.parentNode.submit();
+      // 親要素にある詳細ページへのリンクを止める
+      e.stopPropagation();
     });
   });
+
+  // Cardのクリックで詳細ページへ飛ばす
+  Array.from(
+    document.getElementsByClassName("card")
+  ).forEach(card => {
+    card.addEventListener("click", (e) => {
+      location.href = e.currentTarget.getAttribute("data-href");
+    })
+  })
 });
 ```
 
 今回削除用formのsubmitボタンを削除して、バケツアイコンを利用するようにしているので、jsでsubmit処理を送るように実装しました。  
+またカードクリックで詳細ページに飛ぶようにも変更しています。  
 これで一覧ページに必要なファイルはそろった状態です。  
 
 ただデザイン調整にあたって全体のトーンを直したいので、mainへも手を入れます。  
@@ -1819,9 +1861,3 @@ Optionに限らずモナドはできてしまうのかもしれませんね。
 事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
 あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
 
-<a id="markdown-todo" name="todo"></a>
-# TODO
-
-- delete処理の成功時をredirectに修正
-- welcomeページのroutesを削除して一覧ページに飛ぶようにする
-- 詳細ページへのリンク埋め込み(js)

@@ -75,7 +75,7 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
       (tweetFormData: TweetFormData) => {
         tweets += Tweet(Some(tweets.size + 1L), tweetFormData.content)
         // Redirect("/tweet/list")
-        Redirect(controllers.tweet.routes.TweetController.list())
+        Redirect(routes.TweetController.list())
       }
     )
   }
@@ -110,7 +110,7 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
           case Some(tweet) =>
             // indexは0からのため-1
             tweets.update(id.toInt - 1, tweet.copy(content = data.content))
-            Redirect(controllers.tweet.routes.TweetController.list())
+            Redirect(routes.TweetController.list())
           case None        =>
             NotFound(views.html.error.page404())
         }
@@ -128,7 +128,7 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
     tweets.find(_.id.map(_.toString) == idOpt) match {
       case Some(tweet) =>
         tweets -= tweet
-        Redirect(controllers.tweet.routes.TweetController.list())
+        Redirect(routes.TweetController.list())
       case None        =>
         NotFound(views.html.error.page404())
     }
