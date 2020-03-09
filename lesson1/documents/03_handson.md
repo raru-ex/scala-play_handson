@@ -209,7 +209,7 @@ Twirlのファイルは`views/`直下に配置されており、拡張子が`.sc
 ここまで出来たら、一度ページへアクセスして動作を確認してみましょう。 
 以下のような画面が表示されればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/12_list_page_part1.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/12_list_page_part1.png" width="450">
 
 
 <a id="markdown-モデルの作成とリスト表示" name="モデルの作成とリスト表示"></a>
@@ -289,7 +289,7 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 Twirlの記法については[こちら](https://www.playframework.com/documentation/ja/2.3.x/ScalaTemplates)を参考にしてください。  
 
 *1:  
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/13_twirl_for_space_error.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/13_twirl_for_space_error.png" width="450">
 
 これで一覧表示の実装は完了です。  
 ブラウザから動作を確認してみましょう。  
@@ -297,7 +297,7 @@ Twirlの記法については[こちら](https://www.playframework.com/documenta
 
 以下のように表示されていればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/14_list_view_part1.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/14_list_view_part1.png" width="450">
 
 
 <a id="markdown-詳細ページ作成" name="詳細ページ作成"></a>
@@ -384,7 +384,7 @@ TwirlについてはSeqだった引数がTweetになっているくらいの変�
 
 以下のように表示されていればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/15_detail_view_part1.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/15_detail_view_part1.png" width="450">
 
 <a id="markdown-一覧からのリンク作成" name="一覧からのリンク作成"></a>
 ### 一覧からのリンク作成
@@ -421,7 +421,7 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 
 以下のようにリンクが表示され、リンククリックで詳細ページが表示されたら完了です。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/16_list_view_part2.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/16_list_view_part2.png" width="450">
 
 <a id="markdown-エラーページ作成" name="エラーページ作成"></a>
 ### エラーページ作成
@@ -463,7 +463,7 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 この状態で存在しないTweetを参照しようとすると以下のようになります。  
 [http://localhost:9000/tweet/1111](http://localhost:9000/tweet/1111)
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/17_simple_404.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/17_simple_404.png" width="450">
 
 ステータスコードが404で、作成したページが表示されていることが確認できますね。  
 エラーページを作成する方法は以上です。  
@@ -710,7 +710,7 @@ An implicit MessagesProvider instance was not found.  Please see https://www.pla
 そのため、次はコントローラを修正してあげる必要があります。  
 修正方法はエラーメッセージの中にある`Please see`のリンク先を見ればわかるようになっています。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/19_implicit_MessagesProvider.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/19_implicit_MessagesProvider.png" width="450">
 
 こちらを参考にコントローラを直してみましょう。  
 
@@ -733,7 +733,7 @@ $ sbt compile
 
 以下のように画面が表示されていればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/20_view_register_page.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/20_view_register_page.png" width="450">
 
 ちょっと不格好ですが、この辺りは後ほど修正していきます。  
 少し長丁場になっていますが、次は登録処理を作成していきましょう。  
@@ -813,7 +813,7 @@ def store() = Action { implicit request: Request[AnyContent] =>
 登録してみるとどのようになるでしょうか。  
 以下のような画面になっていないでしょうか。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/21_csrf_error.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/21_csrf_error.png" width="450">
 
 これだけだとよくわからないですよね。  
 こういうときはコンソールに出ているメッセージを確認してみましょう。  
@@ -863,12 +863,12 @@ implicitと書かれていませんが、implicitにした引数のブロック�
 <a id="markdown-バリデーションエラーの場合" name="バリデーションエラーの場合"></a>
 ##### バリデーションエラーの場合
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/22_validation_error.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/22_validation_error.png" width="450">
 
 <a id="markdown-登録成功の場合" name="登録成功の場合"></a>
 ##### 登録成功の場合
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/23_store_success.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/23_store_success.png" width="450">
 
 それぞれこのようになっていれば完了です。  
 
@@ -915,7 +915,7 @@ play.i18n.langs        = ["ja", "en-US"]
 このようにするとAccept-Languageヘッダに`ja`、`en-US`の文字があったときに優先度に合わせてplayが自動的に読み込みに行く`message`ファイルを切り替えてくれます。  
 
 以下の部分にあるものです。  
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/26_accept-languages.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/26_accept-languages.png" width="450">
 
 このとき対象のファイルは`messages.{lang}`というフォーマットになります。  
 今回だと`messages.ja`と`messages.en-US`になります。  
@@ -935,7 +935,7 @@ application.confの設定が終わったので、messagesファイルを作成�
 [http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)  
 入力なしで登録しようとすると以下のように表示されると思います。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/24_default_message.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/24_default_message.png" width="450">
 
 この未設定状態のメッセージが設定ファイルに記載するときのkey名になっているので、覚えておいてください。  
 動きが確認できたら、改めてmessagesファイルの設定を行っていきましょう。  
@@ -958,7 +958,7 @@ constraint.maxLength=最大{0}文字まで
 ブラウザからメッセージを確認してみてください。  
 [http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/25_ja_message.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/25_ja_message.png" width="450">
 
 これでmessagesの設定は完了です。  
 
@@ -997,13 +997,13 @@ Tweetのcontentはinput textにするには文字数が多すぎるのでtextare
 またtextareaのサイズ調整にrows, colsのhtmlのtextareタグにある属性を利用しています。  
 基本的にform helperへの値渡しは(symbol, value)の形式で渡します。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/27_symbol_tuple.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/27_symbol_tuple.png" width="450">
 
 '_label, '_showConstraintsはhelper側で用意されている属性です。  
 今回はこの2つを設定してみました。  
 では、この状態で動きを見てみましょう。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/28_store_html_no_constraints.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/28_store_html_no_constraints.png" width="450">
 
 このようにhtmlの属性と、helperの動きを制御できました。  
 
@@ -1283,7 +1283,7 @@ cssについても同様です。
 [http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)  
 以下のように読み込まれていれがOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/36_link_rel_resetcss.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/36_link_rel_resetcss.png" width="450">
 
 このようにサイト全体で適用したいものはlayoutのテンプレートになっているファイルを変更することで設定可能です。  
 
@@ -1519,12 +1519,12 @@ h1もそのままだと使いづらかったので少し手を入れています
 
 以下のようになっていればOKです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/37_list_redesign.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/37_list_redesign.png" width="450">
 
 他のページも確認して、list.css, list.jsが読み込まれていないことを確認してみてくださいね。  
 
 簡単にはなりますがTwirlへのcss, javascriptの適用の仕方は以上になります。  
 
 
-[< 環境セットアップへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/02_setup.md)  
-[おまけへ進む >](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/04_extra.md)
+[< 環境セットアップへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/02_setup.md)  
+[おまけへ進む >](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/04_extra.md)
