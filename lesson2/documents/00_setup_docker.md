@@ -3,41 +3,20 @@
 
 <!-- TOC -->
 
-- [Lesson 2](#lesson-2)
 - [目次](#目次)
-    - [Playframeworkの実行環境のセットアップ](#playframeworkの実行環境のセットアップ)
-        - [Dockerのインストール](#dockerのインストール)
-        - [Playframeworkの初期プロジェクトのダウンロード](#playframeworkの初期プロジェクトのダウンロード)
-        - [プロジェクトの配置](#プロジェクトの配置)
-        - [DockerでPlay-Scalaの実行環境をセットアップ](#dockerでplay-scalaの実行環境をセットアップ)
-    - [DBのセットアップ](#dbのセットアップ)
-        - [Docker Serviceの設定追加](#docker-serviceの設定追加)
-            - [Dockerfileの設定](#dockerfileの設定)
-            - [my.cnfを配置](#mycnfを配置)
-            - [docker-composeにDBの設定を追記](#docker-composeにdbの設定を追記)
-    - [Playframeworkのセットアップ](#playframeworkのセットアップ)
-        - [build.sbtに依存関係を追加](#buildsbtに依存関係を追加)
-        - [slick-evolutionsの設定](#slick-evolutionsの設定)
-            - [DBへ接続するためにconfを設定](#dbへ接続するためにconfを設定)
-                - [設定の補足](#設定の補足)
-            - [Migration用のsqlを作成](#migration用のsqlを作成)
-            - [evolutionsを実行](#evolutionsを実行)
-        - [slick-codegenでslickのモデルを作成](#slick-codegenでslickのモデルを作成)
-            - [sbt taskの作成](#sbt-taskの作成)
-            - [SlickCodeGenの実行ファイルを作成する](#slickcodegenの実行ファイルを作成する)
-                - [補足](#補足)
-            - [SlickCodeGen Taskの実行](#slickcodegen-taskの実行)
-        - [slick-codegenの日付型Mappingの変更](#slick-codegenの日付型mappingの変更)
-            - [evolutionsのsqlに日付データを追加](#evolutionsのsqlに日付データを追加)
-            - [SlickCodeGenのプログラム修正](#slickcodegenのプログラム修正)
-                - [日付型の型を変更](#日付型の型を変更)
-                - [おまけの部分](#おまけの部分)
-            - [slick-codegenの実行と出力ファイル確認](#slick-codegenの実行と出力ファイル確認)
-        - [play-slickを利用してモデルの操作を行う](#play-slickを利用してモデルの操作を行う)
+- [Lesson2 Dockerセットアップ](#lesson2-dockerセットアップ)
+    - [Lesson1のプロジェクトのコピー](#lesson1のプロジェクトのコピー)
+    - [Dockerのインストール](#dockerのインストール)
+    - [DockerでPlay-Scalaの実行環境をセットアップ](#dockerでplay-scalaの実行環境をセットアップ)
+    - [DockerでDBのセットアップ](#dockerでdbのセットアップ)
+        - [Dockerfileの設定](#dockerfileの設定)
+        - [my.cnfを配置](#mycnfを配置)
+        - [docker-composeにDBの設定を追記](#docker-composeにdbの設定を追記)
     - [Tips](#tips)
 
 <!-- /TOC -->
 
+<a id="markdown-lesson2-dockerセットアップ" name="lesson2-dockerセットアップ"></a>
 # Lesson2 Dockerセットアップ
 
 ハンズオンで開発を行うための環境をセットアップします。  
@@ -45,6 +24,7 @@ Dockerを利用して環境を作成しているため、手順兼説明資料�
 ハンズオン用のプロジェクトにはDocker設定が完了している状態のものを配置しているので、この章はご自身で対応していただく必要はありません。  
 今後自身でプロジェクトを作成する際や、ハンズオン用プロジェクトの構成が気になる人は参考にしていただければと思います。  
 
+<a id="markdown-lesson1のプロジェクトのコピー" name="lesson1のプロジェクトのコピー"></a>
 ## Lesson1のプロジェクトのコピー
 
 まずはLesson1で作成したプロジェクトをコピーします。  
@@ -155,7 +135,7 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 以下の画面が表示されれば起動は成功です。  
 <img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/01_docker_play_init.png" width="450">
 
-<a id="markdown-dbのセットアップ" name="dbのセットアップ"></a>
+<a id="markdown-dockerでdbのセットアップ" name="dockerでdbのセットアップ"></a>
 ## DockerでDBのセットアップ
 
 DB用のdocker-compose設定を行なっていきます。  

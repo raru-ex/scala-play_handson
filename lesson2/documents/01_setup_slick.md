@@ -3,19 +3,9 @@
 
 <!-- TOC -->
 
-- [Lesson 2](#lesson-2)
 - [目次](#目次)
-    - [Playframeworkの実行環境のセットアップ](#playframeworkの実行環境のセットアップ)
-        - [Dockerのインストール](#dockerのインストール)
-        - [Playframeworkの初期プロジェクトのダウンロード](#playframeworkの初期プロジェクトのダウンロード)
-        - [プロジェクトの配置](#プロジェクトの配置)
-        - [DockerでPlay-Scalaの実行環境をセットアップ](#dockerでplay-scalaの実行環境をセットアップ)
-    - [DBのセットアップ](#dbのセットアップ)
-        - [Docker Serviceの設定追加](#docker-serviceの設定追加)
-            - [Dockerfileの設定](#dockerfileの設定)
-            - [my.cnfを配置](#mycnfを配置)
-            - [docker-composeにDBの設定を追記](#docker-composeにdbの設定を追記)
-    - [Playframeworkのセットアップ](#playframeworkのセットアップ)
+- [Lesson2 Slickセットアップ](#lesson2-slickセットアップ)
+    - [PlayframeworkにDB接続関連の設定を追加](#playframeworkにdb接続関連の設定を追加)
         - [build.sbtに依存関係を追加](#buildsbtに依存関係を追加)
         - [slick-evolutionsの設定](#slick-evolutionsの設定)
             - [DBへ接続するためにconfを設定](#dbへ接続するためにconfを設定)
@@ -38,13 +28,14 @@
 
 <!-- /TOC -->
 
-<a id="markdown-lesson-2" name="lesson-2"></a>
+<a id="markdown-lesson2-slickセットアップ" name="lesson2-slickセットアップ"></a>
 # Lesson2 Slickセットアップ
 
 ハンズオンでDB接続を行うためにDB操作ライブラリのSlick関連の設定を行っていきます。  
 一部複雑なものについては、おまけセクションで追加セットアップなどをおこなようにしていますが、おまけ部分は対応しなくても動作に支障はありません。  
 あまり込み入ったことをしすぎるとハマることもあるので、おまけについては読み飛ばしていただいて問題ありません。  
 
+<a id="markdown-playframeworkにdb接続関連の設定を追加" name="playframeworkにdb接続関連の設定を追加"></a>
 ## PlayframeworkにDB接続関連の設定を追加
 
 <a id="markdown-buildsbtに依存関係を追加" name="buildsbtに依存関係を追加"></a>
