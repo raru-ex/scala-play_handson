@@ -102,7 +102,7 @@ play.http.errorHandler = "http.CustomErrorHandler"
 
 アクセすると以下の画面になっていれば実装完了です。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/18_on_notfound.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/18_on_notfound.png" width="450">
 
 <a id="markdown-optionstringのキャスト事故" name="optionstringのキャスト事故"></a>
 ## Option[String]のキャスト事故
@@ -110,36 +110,36 @@ play.http.errorHandler = "http.CustomErrorHandler"
 資料を作成する中でハマったOptionの不思議な動きを紹介します。  
 この動きは削除機能を作るときにOption同士を比較しようとして、ハマってしまいました。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/29_option_success.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/29_option_success.png" width="450">
 
 まず同じ型のOption同士を比較してみました。  
 これはどうやら動くということが確認できている状態です。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/30_option_asInstanceOf_false.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/30_option_asInstanceOf_false.png" width="450">
 
 asInstnaceOfで変換をかけてみた状態です。  
 比較が一致しなくなってしまったので、REPL上では同じ値は参照も同一になってしまってたまたま一致しているのでは？  と思い、valとvarで宣言をしたものを比較してみています。  
 しかしこの場合には答えが一致してしまいました。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/31_set_but_multi_long.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/31_set_but_multi_long.png" width="450">
 
 ならば回りくどいがSetで排除してやろうと思い、Setに入れたところSetに1が二つ格納できてしまいました。  
 これは本格的によくわからない、という状態です。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/32_long_but_string.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/32_long_but_string.png" width="450">
 
 そしてこれがSeqにして値を取り出してみたものです。  
 データを取得するときに型の不一致でエラーになりました。  
 どうやら見た目上はLongっぽく振る舞われているのですが、実体はStringのまま変更されていないようでした。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/33_string_to_long.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/33_string_to_long.png" width="450">
 
 ただ、本来はstringをasInstanceOfでLongに変換することはできないようです。  
 数字以外も入るので、当然といえば当然ですね。  
 これがOptionでラップされることで、処理自体は通るようになってしまうという挙動みたいです。  
 
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/34_seq_string_to_long1.png" width="450">
-<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/documents/images/lesson1/35_seq_string_to_long2.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/34_seq_string_to_long1.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/35_seq_string_to_long2.png" width="450">
 
 Optionに限らずモナドはできてしまうのかもしれませんね。  
 
@@ -149,4 +149,4 @@ Optionに限らずモナドはできてしまうのかもしれませんね。
 事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
 あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
 
-[< ハンズオンへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/03_handson.md)  
+[< ハンズオンへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/03_handson.md)  
