@@ -88,4 +88,4 @@ Community EditionでもScala Pluginを導入すれば、個人で開発する範
 個人的には、強いこだわりがない限りは`IntelliJ IDEA`の利用をオススメします。  
 
 
-[環境セットアップへ進む >](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/documents/lesson1/02_setup.md)
+[環境セットアップへ進む >](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/02_setup.md)
