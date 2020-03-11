@@ -42,7 +42,11 @@
 ### build.sbtに依存関係を追加
 
 今回はplay-slickやslick-codegenを利用して環境を作成していきます。  
-以下の依存関関係を`build.sbt`へ追加してください。  
+
+外部のライブラリを利用するには`build.sbt`の設定が必要です。  
+Playでは`build.sbt`に依存関係を追加することで、対象のライブラリをダウンロードして利用できるようになります。  
+
+本ハンズオンで利用するものとして、以下の依存関関係を`build.sbt`へ追加してください。  
 
 ```scala 
 evolutions,
@@ -51,57 +55,75 @@ evolutions,
 // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
 // https://github.com/playframework/play-slick#all-releases
 "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+"mysql"                   % "mysql-connector-java"  % "6.0.6",
 ```
 
 依存関係を追加すると`build.sbt`ファイルは以下のようになります。  
+`build.sbt`
 ```scala
-lazy val root = (project in file("."))
-  .enablePlugins(PlayScala)
-  .settings(
-    name := """play-scala-hello-world-tutorial""",
-    organization := "com.example",
-    version := "1.0-SNAPSHOT",
-    scalaVersion := "2.13.1",
-    libraryDependencies ++= Seq(
-      guice,
-      evolutions,
-      "org.scalatestplus.play" %% "scalatestplus-play"    % "5.0.0" % Test,
-      "com.typesafe.play"      %% "play-slick"            % "5.0.0",
-      "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
-      "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
-      // 3.3.2のドキュメントがまだ存在しない
-      // https://scala-slick.org/doc/3.3.1/database.html 
-      "mysql"                   % "mysql-connector-java"  % "6.0.6",
-    ),
-    scalacOptions ++= Seq(
-      "-feature",
-      "-deprecation",
-      "-Xfatal-warnings"
-    )
-  )
+name := """play-handson"""
+organization := "com.example"
+
+version := "1.0-SNAPSHOT"
+
+lazy val root = (project in file(".")).enablePlugins(PlayScala)
+
+scalaVersion := "2.13.1"
+
+libraryDependencies ++= Seq(
+  guice,
+  evolutions,
+  "org.scalatestplus.play" %% "scalatestplus-play"    % "5.0.0" % Test,
+  "com.typesafe.play"      %% "play-slick"            % "5.0.0",
+  "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
+  // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
+  // https://github.com/playframework/play-slick#all-releases
+  "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+  "mysql"                   % "mysql-connector-java"  % "6.0.6",
+)
 ```
+
+設定を追加したら一度この設定を読み込んでみましょう。  
+
+```sh
+# sbtファイルの配置されているフォルダへ移動します。
+$ cd {project_root}
+$ sbt update
+```
+
+今回追加したライブラリのダウンロードが始まれば設定はOKです。  
 
 <a id="markdown-slick-evolutionsの設定" name="slick-evolutionsの設定"></a>
 ### slick-evolutionsの設定
 
-TODO: slick-evolutionsの説明
+早速ですが追加したライブラリを使っていきます。  
+
+Slickのツールにはslick-evolutionsというDBマイグレーションツールとslick-codegenというDBからのモデル実装自動生成ツールがあります。  
+ここではevolutionsを利用してDBをマイグレーションしていきます。  
+
+evolutions以外ではFlywayというものも広く利用されています。  
+もしかしたらFlywayのほうがよく使われているかもしれません。  
 
 <a id="markdown-dbへ接続するためにconfを設定" name="dbへ接続するためにconfを設定"></a>
 #### DBへ接続するためにconfを設定
 
-slickを利用するにあたって、DBの接続情報などのいわゆる`config`を記載していきます。  
-playでは `conf/application.conf` が基本の設定ファイルになります。  
-今回はmysqlを利用するので以下のように設定を記載してください。  
+slick-evolutionsは名前の通りSlickを経由してDBへの接続を行います。  
+そのためまずはslickがDBへ接続できるように設定をしてあげる必要があります。  
 
+playはデフォルトで`application.conf`の設定を読み込むようになっているので、このファイルに設定を追加していきましょう。  
+今回はmysqlを利用するので以下のように設定を追加してください。  
+
+`conf/application.conf`
 ```
-# project_root/conf/application.conf
 slick.dbs {
   default {
-
+    # mysqlと接続するためprofileにMySQLのものを指定
     profile = "slick.jdbc.MySQLProfile$"
     db {
       driver   = com.mysql.cj.jdbc.Driver,
+      # dockerではコンテナ名を指定して通信可能なのでdbコンテナに3306ポート経由で通信
       url      = "jdbc:mysql://db:3306/twitter_clone?useSSL=false",
+      # docker-composeで指定したものと合わせる
       user     = "root",
       password = "root",
     }
@@ -112,7 +134,9 @@ slick.dbs {
 <a id="markdown-設定の補足" name="設定の補足"></a>
 ##### 設定の補足
 
-`slick.dbs.{db_name}.db` というような構造になっており、`db_name`の部分は任意に設定可能です。  
+先ほど追加した設定を簡単に説明します。  
+
+slickのデフォルトでの参照設定は`slick.dbs.{db_name}.db` というような構造になっており、`db_name`の部分は任意に設定可能です。  
 ここで設定した`db_name`がこのシステム内での対象DBの名称となります。  
 今回は慣習に倣い`default`としましたが`twitter_clone`や`master`, `slave`のようにすることも可能です。  
 
@@ -122,7 +146,7 @@ slick.dbs {
 <a id="markdown-migration用のsqlを作成" name="migration用のsqlを作成"></a>
 #### Migration用のsqlを作成
 
-DBへの接続設定ができたので、次はDBに対して実行するSQLを用意します。  
+DB接続の設定ができたので、次はDBに対して実行するSQLを用意します。  
 evolutionsではデフォルトで`conf/evolutions/{db_name}/{連番}.sql`というファイルを検索しにいくので、以下のような構造でフォルダ/ファイルを作成してください。  
 
 ```sh
@@ -150,12 +174,14 @@ CREATE TABLE tweet (
 DROP TABLE tweet;
 ```
 
-TODO: sqlの説明
+slickで日付周りの設定をするのが少し面倒なので、ここでは一旦timestampの設定をコメントアウトしています。  
+最終的には設定していくのでご安心ください。  
 
 <a id="markdown-evolutionsを実行" name="evolutionsを実行"></a>
 #### evolutionsを実行
 
-evolutionsでのマイグレーション実行をするために`play-scala`側のコンテナにアクセスし、サーバを起動してください。
+準備が完了したので、実際にマイグレーションを実行してみます。  
+evolutionsはブラウザからマイグレーションを実行する作りになっているため、コンテナへアクセスし、サーバを起動してください。
 
 ```sh
 $ docker-compose exec play-scala bash
@@ -166,10 +192,10 @@ $ docker-compose exec play-scala bash
 
 そうすると以下の画面が表示されると思います。  
   
-![evolutions_execute_view](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson2/documents/images/evolutions_execute.png?raw=tru)  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/02_evolutions_execute.png" width="450">
 
-ここで`Apply this script now!`からevolutionsの実行を許可して、マイグレーションを走らせることができます。  
-実行をしてみたら、mysql側のコンテナへアクセスして動作を確認してみましょう。  
+この画面の`Apply this script now!`ボタンから、evolutionsの実行を許可してマイグレーションを走らせることができます。  
+実際にボタンを押して実行をしてみたら、mysql側のコンテナへアクセスして動作を確認してみましょう。  
 
 ```sh
 $ docker-compose exec db bash
@@ -188,7 +214,6 @@ mysql> show tables;
 このように`tweet`テーブルが作成されていたら、マイグレーションは成功です。  
 一緒に作成されている`play_evolutions`テーブルは、evolutions側でマイグレーションの実行状況を管理するためのテーブルになります。  
 特に気にしなくて大丈夫です。  
-
 
 <a id="markdown-slick-codegenでslickのモデルを作成" name="slick-codegenでslickのモデルを作成"></a>
 ### slick-codegenでslickのモデルを作成

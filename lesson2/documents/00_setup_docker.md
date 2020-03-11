@@ -138,7 +138,7 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 <a id="markdown-dockerでdbのセットアップ" name="dockerでdbのセットアップ"></a>
 ## DockerでDBのセットアップ
 
-DB用のdocker-compose設定を行なっていきます。  
+MySQLを利用するDBのdocker-compose設定を行なっていきます。  
 `project_root` 直下に以下のようにディレクトリ/ファイルを作成してください。  
 `init.sql` を作成していますが、現状利用しないため中身は空のままとしておいてください。  
 
@@ -200,6 +200,7 @@ default-character-set=utf8mb4
 
 `docker-compose.yaml` にDBのService設定を追加します。  
 以下の設定をファイルに追加してください。  
+今回は`twitter_clone`という名前のDBを作るようにしています。  
 
 ```yaml
   db:
@@ -214,7 +215,7 @@ default-character-set=utf8mb4
       - ./docker/db/mysql_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      # Container内にデータベースを作成 TODO: システム名は検討
+      # Container内にデータベースを作成
       MYSQL_DATABASE: twitter_clone
     networks:
       - app-net
@@ -252,7 +253,7 @@ services:
       - ./docker/db/mysql_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      # TODO: システム名は検討
+      # DB名
       MYSQL_DATABASE:      twitter_clone
       # timezoneを設定
       TZ:                  Asia/Tokyo
