@@ -390,9 +390,9 @@ slick-codegenではTimestampやDatetimeを`java.sql.Timestamp`にMappingして�
 CREATE TABLE tweet (
     id         BIGINT(20)    NOT NULL AUTO_INCREMENT,
     content    VARCHAR(120)  NOT NULL,
-    posted_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    created_at DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    updated_at DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    posted_at  DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -411,8 +411,8 @@ DROP TABLE tweet;
 - [Rename]: app/tasks/SlickCodeGen.scala -> app/tasks/CustomSlickCodeGen.scala
 - build.sbt
 
+`app/tasks/CustomSlickCodeGen.scala`
 ```scala
-// -- CustomSlickCodeGen.scala
 package com.example
 
 import com.typesafe.config.ConfigFactory
@@ -425,11 +425,24 @@ import scala.util.{Success, Failure}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+// object名は変更
 object CustomSlickCodeGen extends App {
-  //.. 変数定義部分省略 (SlickCodeGenと同様)
+  // typesafe configを利用してapplication.confをロード
+  val config      = ConfigFactory.load()
+  val defaultPath = "slick.dbs.default"
 
-  // --------------------
-  // Create DB Instance
+  // 末尾の$を削除
+  val profile   = config.getString(s"$defaultPath.profile").dropRight(1)
+  val driver    = config.getString(s"$defaultPath.db.driver")
+  val url       = config.getString(s"$defaultPath.db.url")
+  val user      = config.getString(s"$defaultPath.db.user")
+  val password  = config.getString(s"$defaultPath.db.password")
+
+  // pathが別なので直接呼び出し
+  val outputDir = config.getString("slick.codegen.outputDir")
+  val pkg       = config.getString("application.package")
+
+  // db接続用のインスタンスを生成
   val db  = Database.forURL(
     url      = this.url,
     driver   = this.driver,
@@ -472,6 +485,7 @@ object CustomSlickCodeGen extends App {
   // 処理が完了するまで待つ
   Await.result(codegenFuture, Duration.Inf)
 }
+
 ```
 
 ```scala
@@ -489,13 +503,13 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCod
 
 ```scala
 override def Column = new Column(_){
-        // datetimeはデファルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
-        override def rawType = model.tpe match {
-          case "java.sql.Timestamp" => "LocalDateTime"
-          case _                    =>
-            super.rawType
-        }
-      }
+  // datetimeはデファルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
+  override def rawType = model.tpe match {
+    case "java.sql.Timestamp" => "LocalDateTime"
+    case _                    =>
+      super.rawType
+  }
+}
 ```
 
 ここでColumn定義の実装をoverrideして差し替えています。  

@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
 
 // add code generation task
 lazy val slickCodeGen = taskKey[Unit]("execute Slick CodeGen")
-slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen").value
+slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCodeGen").value
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.example.controllers._"
