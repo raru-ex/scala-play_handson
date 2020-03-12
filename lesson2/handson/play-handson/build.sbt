@@ -17,7 +17,12 @@ libraryDependencies ++= Seq(
   // https://github.com/playframework/play-slick#all-releases
   "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
   "mysql"                   % "mysql-connector-java"  % "6.0.6",
+  "com.typesafe"            % "config"                % "1.4.0"
 )
+
+// add code generation task
+lazy val slickCodeGen = taskKey[Unit]("execute Slick CodeGen")
+slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen").value
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.example.controllers._"

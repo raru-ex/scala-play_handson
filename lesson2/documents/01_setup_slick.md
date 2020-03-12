@@ -86,9 +86,9 @@ libraryDependencies ++= Seq(
 設定を追加したら一度この設定を読み込んでみましょう。  
 
 ```sh
-# sbtファイルの配置されているフォルダへ移動します。
 $ cd {project_root}
-$ sbt update
+$ docker-compose exec play-scala bash
+/source# sbt update
 ```
 
 今回追加したライブラリのダウンロードが始まれば設定はOKです。  
@@ -218,8 +218,9 @@ mysql> show tables;
 <a id="markdown-slick-codegenでslickのモデルを作成" name="slick-codegenでslickのモデルを作成"></a>
 ### slick-codegenでslickのモデルを作成
 
-slick-codegeはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
-今回はsbt taskとして登録して手動実行できるように設定してきますが、sbtについては詳しく知らないため、設定方法のみ記述しますが詳細については割愛させていただきます。  
+slick-codegenというのはDBのtable情報からslickで利用するモデルを自動生成してくれるライブラリです。
+codegeはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
+今回はsbt taskとして登録して手動実行できるように設定してきますが、sbtについては詳しく知らないため、設定方法のみ記述し詳細については割愛させていただきます。  
 
 <a id="markdown-sbt-taskの作成" name="sbt-taskの作成"></a>
 #### sbt taskの作成
@@ -232,8 +233,9 @@ lazy val slickCodeGen = taskKey[Unit]("execute Slick CodeGen")
 slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen").value
 ```
 
-1行目で`slickCodeGen`という名前でコマンド(Task)を登録しています。  
+1行目で`slickCodeGen`という名前でコマンド(Task)のインスタンスを作成しています。  
 2行目ではそのタスク名に対して、特定のクラス処理を登録するようなことをしています。※ 詳細は理解できていません。
+sbtでは`:=`を演算子を利用してKeyに対しての実態を定義していきます。  
 
 ここでは`com.example.SlickCodeGen`というクラスを登録しています。  
 そのためこれから、この名前に一致するクラスを作成していきます。
@@ -244,13 +246,14 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen")
 #### SlickCodeGenの実行ファイルを作成する
 
 それでは早速SlickCodeGenの実行ファイルを作成していきます。  
-今回は以下のファイルの追加/変更を行っていきます。
+今回は以下のファイルの追加/変更を行っていきます。  
+
 - app/tasks/SlickCodeGen.scala
 - build.sbt
 - conf/application.conf
 
+`app/tasks/SlickCodeGen.scala`
 ```scala
-// -- app/tasks/SlickCodeGen.scala
 // Taskに登録したものと同様にpackageを指定
 package com.example
 
@@ -263,6 +266,7 @@ object SlickCodeGen extends App {
   val defaultPath = "slick.dbs.default"
 
   // 末尾の$を削除
+  // s補間子つき文字列では${}. $hogeで変数を参照可能です。この場合 slick.dbs.default.profileのように展開されます。
   val profile   = config.getString(s"$defaultPath.profile").dropRight(1)
   val driver    = config.getString(s"$defaultPath.db.driver")
   val url       = config.getString(s"$defaultPath.db.url")
@@ -283,15 +287,16 @@ object SlickCodeGen extends App {
 ここで`TypesafeConfig`というライブラリを利用しています。  
 これは外部のライブラリになるため`build.sbt`へ依存関係を追加します。  
 
+`build.sbt`
 ```scala
-// -- build.sbt
 "com.typesafe" % "config" % "1.4.0"
 ```
 
-依存関係を追加したら、新しく追加した設定を読み込めるように`application.conf`へ追記をしていきます。
+依存関係を追加したら、`SlickCodeGen`クラスで利用している設定情報を`application.conf`へ追記していきます。
 
 ```
 slick {
+  # slick.dbsをslickとdbsに分離しているので注意
   dbs {
     default {
       profile = "slick.jdbc.MySQLProfile$"
@@ -310,17 +315,18 @@ slick {
   }
 }
 
+# DB関係なくシステム全体での設定のためslickの外に定義しています
 application {
   package = "com.example"
 }
 ```
+
 slick部分の構造が少し変更されているので気をつけてください。  
 
 <a id="markdown-補足" name="補足"></a>
-##### 補足
+##### TypesafeConfig導入の補足
 
 通常のplayでの実装ではControllerへのDIからconfigを利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムになるのでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
-
 
 <a id="markdown-slickcodegen-taskの実行" name="slickcodegen-taskの実行"></a>
 #### SlickCodeGen Taskの実行
@@ -344,6 +350,7 @@ output
 
 今回はevolutionsのテーブルも対象に取られているため、かなり`うわっ...`となるファイルになっていると思いますが、Tweet部分に限れば以下のようになっています。   
 
+`output/codegen/com/example/Tables.scala`
 ```scala
   implicit def GetResultTweetRow(implicit e0: GR[Long], e1: GR[String]): GR[TweetRow] = GR{
     prs => import prs._
@@ -363,7 +370,6 @@ output
 
 `Slick`は詳細を理解しようとすると大変なのでここでは詳細は省きますが、これでSlickからTweetテーブルを操作するために必要なコードが用意できました。  
 このファイルを自力で実装するのはミスも発生して大変なので、特に慣れないうちはcodegenから生成するのが良いと思います。  
-
 
 <a id="markdown-slick-codegenの日付型mappingの変更" name="slick-codegenの日付型mappingの変更"></a>
 ### slick-codegenの日付型Mappingの変更
