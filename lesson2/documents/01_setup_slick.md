@@ -569,15 +569,24 @@ val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ```
 
 ちゃんとLocalDateTimeになっていますね。  
-
 長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。
 
 ### WIP
 
+Slick3.3以降はMySQLを利用するとDateTime等の日付系を文字列で取得するようになっている。  
+その後LocalDateTimeなど型に合わせて変換をしようとするが、そのときにデフォルトだとISO_LOCAL_DATE_TIMEを利用してしまう。  
+この結果`yyyy-MM-dd HH:mm:ss`などの形式はparseエラーになってしまう。`yyyy-MM-ddTHH:mm:ss`なら通る  
+
+対応策
+
+* 文字列のまま受け取って、モデルとのマッピングでモデルを生成するところで日付型の部分をparseする
+* 上記の処理をimplicitでslick column mappingで対応する
+* MySQLProfileを拡張して独自のprofileを作成する (試したけどうまく動かなかった)
+
+それぞれのパターンの実装をサンプルで記載する
+
 <a id="markdown-play-slickを利用してモデルの操作を行う" name="play-slickを利用してモデルの操作を行う"></a>
 ### play-slickを利用してモデルの操作を行う
-
-
 
 <a id="markdown-tips" name="tips"></a>
 ## Tips

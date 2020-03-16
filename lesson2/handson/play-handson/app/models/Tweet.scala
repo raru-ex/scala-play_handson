@@ -30,7 +30,13 @@ trait TweetTable {
   class TweetTable(_tableTag: Tag) extends profile.api.Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
     def * = (id, content, postedAt, createdAt, updatedAt) <> (
       (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
-        Tweet(Some(x._1), x._2, x._3, x._4, x._5)
+        Tweet(
+          Some(x._1),
+          x._2,
+          x._3,
+          x._4,
+          x._5
+        )
       },
       (tweet: Tweet) => {
         Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
