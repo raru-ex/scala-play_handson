@@ -497,7 +497,7 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCod
 いろいろと実装が入っていますが、注目すべきポイントは1点とおまけ1つです。
 
 <a id="markdown-日付型の型を変更" name="日付型の型を変更"></a>
-##### 日付型の型を変更
+##### Codegenで自動生成される日付型の型を変更
 
 本セクションでの目的である日付型の変換をしている部分はここです。  
 
@@ -557,6 +557,9 @@ $ docker-compose exec play-scala sbt slickCodeGen
 実行後に出力されたファイルの一部がこちら
 
 ```scala
+// ... 省略
+import java.time.{LocalDateTime}
+// ... 省略
 /** Database column posted_at SqlType(DATETIME) */
 val postedAt: Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
 /** Database column created_at SqlType(DATETIME) */
@@ -568,6 +571,8 @@ val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ちゃんとLocalDateTimeになっていますね。  
 
 長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。
+
+### WIP
 
 <a id="markdown-play-slickを利用してモデルの操作を行う" name="play-slickを利用してモデルの操作を行う"></a>
 ### play-slickを利用してモデルの操作を行う
