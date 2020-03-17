@@ -9,10 +9,10 @@ import models.Tweet
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
-import slick.jdbc.MySQLProfile.api._
+// import slick.jdbc.MySQLProfile.api._
+import models.MyDBProfile.api._
 import scala.concurrent.ExecutionContext.Implicits.global
-import models.TupleMappedTweetTable
-import models.SlickMappedTweetTableV1
+import models.MyProfileTweetTable
 
 case class TweetFormData(content: String)
 
@@ -49,7 +49,7 @@ with I18nSupport {
     val db = Database.forConfig("slick.dbs.default.db")
     for {
       results <- db.run(
-       SlickMappedTweetTableV1.query.map(x => x).result
+       MyProfileTweetTable.query.map(x => x).result
       )
     } yield {
       Ok(views.html.tweet.list(results))
