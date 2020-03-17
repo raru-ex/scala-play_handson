@@ -577,6 +577,14 @@ Slick3.3以降はMySQLを利用するとDateTime等の日付系を文字列で�
 その後LocalDateTimeなど型に合わせて変換をしようとするが、そのときにデフォルトだとISO_LOCAL_DATE_TIMEを利用してしまう。  
 この結果`yyyy-MM-dd HH:mm:ss`などの形式はparseエラーになってしまう。`yyyy-MM-ddTHH:mm:ss`なら通る  
 
+
+以下のページにprofileを拡張子なさい、と書いてある...
+https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns
+
+MappedColumnType.base[LocalDateTime, String]では解決できない。
+LocalDateTimeに入ってしまっている時点でslick(profile)側のgetValueが呼ばれてしまってparseエラーになるから。  
+
+
 対応策
 
 * 文字列のまま受け取って、モデルとのマッピングでモデルを生成するところで日付型の部分をparseする
