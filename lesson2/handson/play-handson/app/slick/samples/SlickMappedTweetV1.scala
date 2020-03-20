@@ -2,6 +2,7 @@ package slick.samples
 
 import java.time.LocalDateTime
 import slick.jdbc.{GetResult}
+import models.Tweet
 
 /* def *のtupleでマッピングをするサンプル実装 */
 object SlickMappedTweetTableV1 extends {

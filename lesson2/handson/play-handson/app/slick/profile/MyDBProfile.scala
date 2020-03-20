@@ -2,6 +2,8 @@ package slick.profile
 
 import java.time.format.DateTimeFormatter
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatterBuilder
+import java.time.temporal.ChronoField
 
 /* LocalDateTimeをプロダクトに適した形に処理できるようにProfile設定を独自に拡張 */
 trait MyDBProfile extends slick.jdbc.JdbcProfile with slick.jdbc.MySQLProfile {
@@ -36,11 +38,20 @@ trait MyDBProfile extends slick.jdbc.JdbcProfile with slick.jdbc.MySQLProfile {
 
   // Customise the types...
   class JdbcTypes extends super.JdbcTypes {
+    // PostgresのProfileを参考にミリ秒も含めて対応できるformatterを実装
+    private[this] val formatter = {
+      new DateTimeFormatterBuilder()
+        .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        .optionalStart()
+        .appendFraction(ChronoField.NANO_OF_SECOND,0,9,true)
+        .optionalEnd()
+        .toFormatter()
+    }
+
     override val localDateTimeType : LocalDateTimeJdbcType = new LocalDateTimeJdbcType {
       override def sqlType : Int = {
         java.sql.Types.VARCHAR
       }
-      // override def sqlTypeName(sym: Option[FieldSymbol]) = "BIGINT"
 
       override def setValue(v: LocalDateTime, p: PreparedStatement, idx: Int) : Unit = {
         p.setString(idx, if (v == null) null else v.toString)
@@ -48,8 +59,8 @@ trait MyDBProfile extends slick.jdbc.JdbcProfile with slick.jdbc.MySQLProfile {
       override def getValue(r: ResultSet, idx: Int) : LocalDateTime = {
         r.getString(idx) match {
           case null       => null
-          // NOTE: ここでデータ取得時のパース処理を記述して変換を行う
-          case dateString => LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+          // 文字列から日付型にパースできるようにparseにformatterを渡す
+          case dateString => LocalDateTime.parse(dateString, formatter)
         }
       }
       override def updateValue(v: LocalDateTime, r: ResultSet, idx: Int) = {

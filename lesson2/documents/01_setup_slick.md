@@ -32,8 +32,8 @@
 # Lesson2 Slickセットアップ
 
 ハンズオンでDB接続を行うためにDB操作ライブラリのSlick関連の設定を行っていきます。  
-一部複雑なものについては、おまけセクションで追加セットアップなどをおこなようにしていますが、おまけ部分は対応しなくても動作に支障はありません。  
-あまり込み入ったことをしすぎるとハマることもあるので、おまけについては読み飛ばしていただいて問題ありません。  
+一部複雑な箇所もあるのでハンズオンとして対応せずに、この実装がインクルードされた状態のシードを利用して実装を進めていただいても大丈夫です。  
+その場合にも一応何をしているのかを把握していただいた方が良いとは思うので、サッと目を通してもらえると幸いです。  
 
 <a id="markdown-playframeworkにdb接続関連の設定を追加" name="playframeworkにdb接続関連の設定を追加"></a>
 ## PlayframeworkにDB接続関連の設定を追加
@@ -390,11 +390,19 @@ slick-codegenではTimestampやDatetimeを`java.sql.Timestamp`にMappingして�
 CREATE TABLE tweet (
     id         BIGINT(20)    NOT NULL AUTO_INCREMENT,
     content    VARCHAR(120)  NOT NULL,
-    posted_at  DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    posted_at  DATETIME      NOT NULL,
+    created_at TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id)
 );
+
+-- sample data
+INSERT INTO tweet(id, content, posted_at) VALUES
+(1, 'tweet1', '2020-03-15 13:15:00.012345'),
+(2, 'tweet2', '2020-03-15 14:15:00.012345'),
+(3, 'tweet3', '2020-03-15 15:15:00.012345'),
+(4, 'tweet4', '2020-03-15 16:15:00.012345'),
+(5, 'tweet5', '2020-03-15 17:15:00.012345');
 
 -- !Downs
 DROP TABLE tweet;
@@ -571,32 +579,271 @@ val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ちゃんとLocalDateTimeになっていますね。  
 長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。
 
-### WIP
+## slickのモデルを実装
 
-Slick3.3以降はMySQLを利用するとDateTime等の日付系を文字列で取得するようになっている。  
-その後LocalDateTimeなど型に合わせて変換をしようとするが、そのときにデフォルトだとISO_LOCAL_DATE_TIMEを利用してしまう。  
-この結果`yyyy-MM-dd HH:mm:ss`などの形式はparseエラーになってしまう。`yyyy-MM-ddTHH:mm:ss`なら通る  
+基本的なslickの設定が完了したので、evolutionsで作成されたモデルなどを利用しながら実際のシステムで利用するモデルを作成してきます。  
+実装方法が何種類かあるのですが、利用してるRDBMSに応じて少し対応方法が変わります。  
+今回はMySQLを利用しているのでそれ前提で記載していきます。  
 
+### Slick3.3とMySQLを組み合わせた場合の日付型対応
 
-以下のページにprofileを拡張子なさい、と書いてある...
-https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns
+SlickはRDBMSごとに日付関連を扱うときに利用する型が違っています。  
+特にMySQLはほぼ全て文字列として取り扱おうとするため、そのままの状態では利用しづらくなってしまいます。  
+今回はこの部分を自前の追加実装で吸収していきたいと思います。  
+対応方法は何種類かあるのですが、今回はそのうち採用していく方法の実装のみ行います。  
+おまけ部分で他の実装方法についても紹介しますので、気になる方はおまけをご覧ください。  
 
-MappedColumnType.base[LocalDateTime, String]では解決できない。
-LocalDateTimeに入ってしまっている時点でslick(profile)側のgetValueが呼ばれてしまってparseエラーになるから。  
+#### 日付関連のRDBMSごと比較
 
+RDBMSごとに違うとありましたが、実際に確認してみます。  
+以下のリンクから公式サイトの情報が確認できますが、リンク先の情報の画像も合わせて載せておきます。  
+[https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)
 
-対応策
+[MySQLの場合]  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/03_profile_mysql.png" width="450">
 
-* 文字列のまま受け取って、モデルとのマッピングでモデルを生成するところで日付型の部分をparseする
-* 上記の処理をimplicitでslick column mappingで対応する
-* MySQLProfileを拡張して独自のprofileを作成する (試したけどうまく動かなかった)
+[Postgresの場合]  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/04_profile_postgres.png" width="450">
 
-それぞれのパターンの実装をサンプルで記載する
+[Oracleの場合]
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/05_profile_oracle.png" width="450">
+
+このようにそれぞれ日付型の型に割り当てられたSQL Typeに差があります。  
+細かいことは不明ですが厳密にやろうとするとMySQLが日付関連のデータの持ち方に振れ幅が大きくてparserが統一できなかったのかもしれないですね。 (わかりませんが)  
+
+### 未対応の場合のエラーと原因
+
+特に何も対応せずに今のままの状態で実装を進めるとDBアクセスを行なったタイミングで以下のようなエラーになります。  
+
+```sh
+play.api.http.HttpErrorHandlerExceptions$$anon$1: Execution exception[[DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10]]
+        at play.api.http.HttpErrorHandlerExceptions$.throwableToUsefulException(HttpErrorHandler.scala:332)
+        at play.api.http.DefaultHttpErrorHandler.onServerError(HttpErrorHandler.scala:251)
+        at play.core.server.AkkaHttpServer$$anonfun$2.applyOrElse(AkkaHttpServer.scala:421)
+        at play.core.server.AkkaHttpServer$$anonfun$2.applyOrElse(AkkaHttpServer.scala:417)
+        at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:453)
+        at akka.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:55)
+        at akka.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:92)
+        at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+        at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+        at akka.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:92)
+Caused by: java.time.format.DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10
+        at java.time.format.DateTimeFormatter.parseResolved0(DateTimeFormatter.java:1949)
+        at java.time.format.DateTimeFormatter.parse(DateTimeFormatter.java:1851)
+        at java.time.LocalDateTime.parse(LocalDateTime.java:492)
+        at java.time.LocalDateTime.parse(LocalDateTime.java:477)
+        at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:404)
+        at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:389)
+        at slick.jdbc.SpecializedJdbcResultConverter$$anon$1.read(SpecializedJdbcResultConverters.scala:26)
+        at slick.jdbc.SpecializedJdbcResultConverter$$anon$1.read(SpecializedJdbcResultConverters.scala:24)
+        at slick.relational.ProductResultConverter.read(ResultConverter.scala:54)
+        at slick.relational.ProductResultConverter.read(ResultConverter.scala:44)
+```
+
+重要な部分は以下の部分です。  
+`Execution exception[[DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10]]`  
+
+日付型のparseでエラーになっていますね。  
+
+ここから少し難しくなるのですが、このエラーを調査していきます。  
+
+エラー調査のために、先ほどのログをもう少し細かくみてみましょう。  
+そうすると以下のような出力を見つけることができると思います。  
+`at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:389)`  
+
+これが今回エラーが発生している箇所です。  
+この`slic.jdbc.MySQLProfile`がどこで利用されているかというと、codegenで自動生成したModelにあります。  
+
+codegenで生成されたコードを見てみると、以下のようにMySQLProfileを利用しているところがありますね。  
+```scala
+object Tables extends {
+  val profile = slick.jdbc.MySQLProfile
+} with Tables
+```
+
+ここで読み込んだprofileで実装されているLocalDateTimeの`getValue`というところに問題があるというわけです。  
+
+では、引き続きコードを追ってみましょう。  
+早速MySQLProfileの`getValue`を見ていきます。  
+以下が、そのコードです。  
+```scala
+    override val localDateTimeType : LocalDateTimeJdbcType = new LocalDateTimeJdbcType {
+      override def sqlType : Int = {
+        java.sql.Types.VARCHAR
+      }
+      override def setValue(v: LocalDateTime, p: PreparedStatement, idx: Int) : Unit = {
+        p.setString(idx, if (v == null) null else v.toString)
+      }
+      // 今回エラーが発生しているのはこのメソッド
+      override def getValue(r: ResultSet, idx: Int) : LocalDateTime = {
+        r.getString(idx) match {
+          case null => null
+          // 具体的にはこの parse 処理部分です。
+          case iso8601String => LocalDateTime.parse(iso8601String)
+        }
+      }
+      override def updateValue(v: LocalDateTime, r: ResultSet, idx: Int) = {
+        r.updateString(idx, if (v == null) null else v.toString)
+      }
+      override def valueToSQLLiteral(value: LocalDateTime) : String = {
+        stringToMySqlString(value.toString)
+      }
+    }
+```
+
+LocalDateTimeの値を`getValue`を見てください。  
+この中でDBから受け取った日付の文字列をparseしています。  
+今回はここでエラーが出てしまうということなのです。  
+
+LocalDateTime.parseのデフォルトフォーマットは`yyyy-MM-ddTHH:mm:ss`というフォーマットになっているため、このフォーマットに合わない日付文字列は全てparseで落ちてしまいます。  
+今回の場合`yyyy-MM-dd HH:mm:ss`の文字列で渡ってしまうため`T`が足りておらず、エラーになってしまうわけですね。  
+indexもちょうど10番目です。  
+
+エラーの内容と原因がわかったので、次はこれを解決していきましょう。  
+
+### LocalDateTimeのparseエラー対応方針決め
+
+ここで対応方針を決める必要があります。  
+詳細はここでは割愛しますが、対応方針として考えられるものとして3つほどあります。
+
+1. 一度Stringで受け取るようにしてModel <-> DB Valeの変換を`def *`などで自前実装する
+1. MappedColumnTypeを利用して、implict valの形でマッピングを作成する
+1. MySQLProfileを継承して独自Profileを作成する (公式推奨)
+
+それぞれメリット/デメリット向いている用途などがありますが、今回は３番目の独自Profileを実装する方式で対応をしていきたいと思います。  
+
+この方法を選択する理由はシンプルに`公式推奨`だからです。  
+また私は一番理解しやすいのは1番だと考えていて、それがrookies資料としては適切なのではと悩んだのですが、全てのテーブルのモデルのmappingを書いていくのは効率が悪すぎるので、少し難しい感じはしてしまいますがProfile実装を選択しています。  
+
+とはいえ、Profile拡張という言葉の持つパワーのせいで難しい気がするだけで、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応でもあります。  
+あまり難しく考えずに「既存実装コピペしてLocalDateTimeのformatterだけ直す」と思っていただければ、心理的負荷は減るのかなと思います。  
+
+### 独自Profile実装
+
+では、独自Profileの実装をしていきましょう。  
+先ほどお話ししたように公式に実装方法が書かれているので、そちらを参照していきます。  
+[https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)
+
+文章でいうと以下の部分ですね。  
+```
+If you need to customise these formats, you can by extending a Profile and overriding the appropriate methods. For an example of this see: https://github.com/d6y/instant-etc/blob/master/src/main/scala/main.scala#L9-L45. Also of use will be an example of a full mapping, such as: https://github.com/slick/slick/blob/v3.3.0/slick/src/main/scala/slick/jdbc/JdbcTypesComponent.scala#L187-L365.
+```
+
+この公式実装はH2DBを元に書かれているので、これを参考にMySQLのコードを作っていきます。  
+公式の拡張実装と、以下のMySQLProfileの実装を比較しながら対応していくとわかりやすいと思います。  
+[MySQLProfile.scala#L389-L415](https://github.com/slick/slick/blob/master/slick/src/main/scala/slick/jdbc/MySQLProfile.scala#L389-L415)
+
+では、以下に最終的な実装を記載します。  
+
+`app/slick/profile/MyDBProfile.scala`
+```scala
+package slick.profile
+
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatterBuilder
+import java.time.temporal.ChronoField
+
+/* LocalDateTimeをプロダクトに適した形に処理できるようにProfile設定を独自に拡張 */
+trait MyDBProfile extends slick.jdbc.JdbcProfile with slick.jdbc.MySQLProfile {
+  import java.sql.{PreparedStatement, ResultSet}
+  import slick.ast.FieldSymbol
+
+  @inline
+  private[this] def stringToMySqlString(value : String) : String = {
+    value match {
+      case null => "NULL"
+      case _ =>
+        val sb = new StringBuilder
+        sb append '\''
+        for(c <- value) c match {
+          case '\'' => sb append "\\'"
+          case '"' => sb append "\\\""
+          case 0 => sb append "\\0"
+          case 26 => sb append "\\Z"
+          case '\b' => sb append "\\b"
+          case '\n' => sb append "\\n"
+          case '\r' => sb append "\\r"
+          case '\t' => sb append "\\t"
+          case '\\' => sb append "\\\\"
+          case _ => sb append c
+        }
+        sb append '\''
+        sb.toString
+    }
+  }
+
+  override val columnTypes = new JdbcTypes
+
+  // Customise the types...
+  class JdbcTypes extends super.JdbcTypes {
+    private[this] val formatter = {
+      // PostgresのProfileを参考にミリ秒も含めて対応できるformatterを実装
+      new DateTimeFormatterBuilder()
+        .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        .optionalStart()
+        .appendFraction(ChronoField.NANO_OF_SECOND,0,9,true)
+        .optionalEnd()
+        .toFormatter()
+    }
+
+    override val localDateTimeType : LocalDateTimeJdbcType = new LocalDateTimeJdbcType {
+      override def sqlType : Int = {
+        java.sql.Types.VARCHAR
+      }
+
+      override def setValue(v: LocalDateTime, p: PreparedStatement, idx: Int) : Unit = {
+        p.setString(idx, if (v == null) null else v.toString)
+      }
+      override def getValue(r: ResultSet, idx: Int) : LocalDateTime = {
+        r.getString(idx) match {
+          case null       => null
+          // 文字列から日付型にパースできるようにparseにformatterを渡す
+          case dateString => LocalDateTime.parse(dateString, formatter)
+        }
+      }
+      override def updateValue(v: LocalDateTime, r: ResultSet, idx: Int) = {
+        r.updateString(idx, if (v == null) null else v.toString)
+      }
+      override def valueToSQLLiteral(value: LocalDateTime) : String = {
+        stringToMySqlString(value.toString)
+      }
+    }
+  }
+}
+
+object MyDBProfile extends MyDBProfile
+```
+
+結構なコード量に見えますが、ほとんどコピペしただけです。  
+大事な部分は以下のパース部分ですね。  
+```
+case dateString => LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+```
+
+ほとんどは元のMySQLProfileの実装をコピーして持ってきているだけです。  
+しかしLocalDateTimeのparse処理が修正されているので、このProfileを利用してSlickに設定すれば特に他には何もすることなくLocalDateTimeがモデルにマッピングできるようになります。  
+
+ちょっと話は逸れますが`.appendFraction`便利ですね。  
+自分で文字列処理するの嫌だったので、とてもありがたいです。  
+
+少し長くなりましたが日付対応はこれで完了です。  
 
 <a id="markdown-play-slickを利用してモデルの操作を行う" name="play-slickを利用してモデルの操作を行う"></a>
 ### play-slickを利用してモデルの操作を行う
+
+最後に今まで作成したモデルやProfileを利用して、Slickへ問合せを行うためのモデルを作成していきます。  
+
 
 <a id="markdown-tips" name="tips"></a>
 ## Tips
 
 - db名変更をした場合などは`docker/db/mysql_data/*`を削除してからコンテナの再起動をする
+
+## TODO
+
+- play-slickを活用せずに普通にslick使ってしまっている
+  - codegenで生成したコードとplay-slick用の調整をしつつモデルを作る
+
+
+
