@@ -15,7 +15,7 @@ case class Tweet(
 )
 
 object TweetTable extends {
-  val profile    = slick.jdbc.MySQLProfile
+  val profile    = slick.profile.MyDBProfile
 } with TweetTable
 
 trait TweetTable {
@@ -24,19 +24,13 @@ trait TweetTable {
 
   implicit def GetResultTweet(implicit e0: GetResult[Long], e1: GetResult[String], e2: GetResult[LocalDateTime]): GetResult[Tweet] = GetResult{
     prs => import prs._
-    Tweet.tupled((<<[Option[Long]], <<[String], <<[LocalDateTime], <<[LocalDateTime], <<[LocalDateTime]))
+    Tweet.tupled((Some(<<[Long]), <<[String], <<[LocalDateTime], <<[LocalDateTime], <<[LocalDateTime]))
   }
 
   class TweetTable(_tableTag: Tag) extends profile.api.Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
     def * = (id, content, postedAt, createdAt, updatedAt) <> (
       (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
-        Tweet(
-          Some(x._1),
-          x._2,
-          x._3,
-          x._4,
-          x._5
-        )
+        Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
       },
       (tweet: Tweet) => {
         Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))

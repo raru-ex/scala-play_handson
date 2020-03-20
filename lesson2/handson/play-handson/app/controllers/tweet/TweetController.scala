@@ -9,10 +9,9 @@ import models.Tweet
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
-// import slick.jdbc.MySQLProfile.api._
-import models.MyDBProfile.api._
+import slick.profile.MyDBProfile.api._
 import scala.concurrent.ExecutionContext.Implicits.global
-import models.MyProfileTweetTable
+import models.TweetTable
 
 case class TweetFormData(content: String)
 
@@ -40,16 +39,14 @@ with I18nSupport {
 
   /**
     * Tweetを一覧表示
+    *   Action.asyncとすることでreturnの型としてFuture[Result]を受け取れるように修正
     */
   def list() =  Action async { implicit request: Request[AnyContent] =>
-    // Ok()はステータスコードが200な、Resultをreturnします。
-    // つまり正常系としてviews.html.tweet.listのコンテンツを返すということになります。
-
-    // viewの引数としてimmutableなtweetsを渡します。
+    // DBから値を取得してreturnするように修正
     val db = Database.forConfig("slick.dbs.default.db")
     for {
       results <- db.run(
-       MyProfileTweetTable.query.map(x => x).result
+       TweetTable.query.map(x => x).result
       )
     } yield {
       Ok(views.html.tweet.list(results))

@@ -1,4 +1,4 @@
-package models
+package slick.samples
 
 import java.time.format.DateTimeFormatter
 import java.time.LocalDateTime
