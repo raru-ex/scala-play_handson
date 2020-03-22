@@ -15,16 +15,28 @@
         - [slick-codegenでslickのモデルを作成](#slick-codegenでslickのモデルを作成)
             - [sbt taskの作成](#sbt-taskの作成)
             - [SlickCodeGenの実行ファイルを作成する](#slickcodegenの実行ファイルを作成する)
-                - [補足](#補足)
+                - [TypesafeConfig導入の補足](#typesafeconfig導入の補足)
             - [SlickCodeGen Taskの実行](#slickcodegen-taskの実行)
         - [slick-codegenの日付型Mappingの変更](#slick-codegenの日付型mappingの変更)
             - [evolutionsのsqlに日付データを追加](#evolutionsのsqlに日付データを追加)
             - [SlickCodeGenのプログラム修正](#slickcodegenのプログラム修正)
-                - [日付型の型を変更](#日付型の型を変更)
+                - [Codegenで自動生成される日付型の型を変更](#codegenで自動生成される日付型の型を変更)
                 - [おまけの部分](#おまけの部分)
             - [slick-codegenの実行と出力ファイル確認](#slick-codegenの実行と出力ファイル確認)
+    - [slickのモデルを実装](#slickのモデルを実装)
+        - [Slick3.3とMySQLを組み合わせた場合の日付型対応](#slick33とmysqlを組み合わせた場合の日付型対応)
+            - [日付関連のRDBごと比較](#日付関連のrdbごと比較)
+        - [未対応の場合のエラーと原因](#未対応の場合のエラーと原因)
+        - [LocalDateTimeのparseエラー対応方針決め](#localdatetimeのparseエラー対応方針決め)
+        - [独自Profile実装](#独自profile実装)
         - [play-slickを利用してモデルの操作を行う](#play-slickを利用してモデルの操作を行う)
+            - [そもそもplay-slickとは？](#そもそもplay-slickとは)
+            - [play-slickのコード上の機能](#play-slickのコード上の機能)
+            - [Tweet関連のDBアクセス用クラスを作成する](#tweet関連のdbアクセス用クラスを作成する)
+            - [独自実装したprofileを利用するように設定する](#独自実装したprofileを利用するように設定する)
+    - [DBの値を利用して一覧ページを表示する](#dbの値を利用して一覧ページを表示する)
     - [Tips](#tips)
+    - [TODO](#todo)
 
 <!-- /TOC -->
 
@@ -32,8 +44,8 @@
 # Lesson2 Slickセットアップ
 
 ハンズオンでDB接続を行うためにDB操作ライブラリのSlick関連の設定を行っていきます。  
-一部複雑なものについては、おまけセクションで追加セットアップなどをおこなようにしていますが、おまけ部分は対応しなくても動作に支障はありません。  
-あまり込み入ったことをしすぎるとハマることもあるので、おまけについては読み飛ばしていただいて問題ありません。  
+一部複雑な箇所もあるのでハンズオンとして対応せずに、この実装がインクルードされた状態のシードを利用して実装を進めていただいても大丈夫です。  
+その場合にも一応何をしているのかを把握していただいた方が良いとは思うので、サッと目を通してもらえると幸いです。  
 
 <a id="markdown-playframeworkにdb接続関連の設定を追加" name="playframeworkにdb接続関連の設定を追加"></a>
 ## PlayframeworkにDB接続関連の設定を追加
@@ -323,7 +335,7 @@ application {
 
 slick部分の構造が少し変更されているので気をつけてください。  
 
-<a id="markdown-補足" name="補足"></a>
+<a id="markdown-typesafeconfig導入の補足" name="typesafeconfig導入の補足"></a>
 ##### TypesafeConfig導入の補足
 
 通常のplayでの実装ではControllerへのDIからconfigを利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムになるのでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
@@ -390,11 +402,19 @@ slick-codegenではTimestampやDatetimeを`java.sql.Timestamp`にMappingして�
 CREATE TABLE tweet (
     id         BIGINT(20)    NOT NULL AUTO_INCREMENT,
     content    VARCHAR(120)  NOT NULL,
-    posted_at  DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    posted_at  DATETIME      NOT NULL,
+    created_at TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id)
 );
+
+-- sample data
+INSERT INTO tweet(id, content, posted_at) VALUES
+(1, 'tweet1', '2020-03-15 13:15:00.012345'),
+(2, 'tweet2', '2020-03-15 14:15:00.012345'),
+(3, 'tweet3', '2020-03-15 15:15:00.012345'),
+(4, 'tweet4', '2020-03-15 16:15:00.012345'),
+(5, 'tweet5', '2020-03-15 17:15:00.012345');
 
 -- !Downs
 DROP TABLE tweet;
@@ -496,8 +516,8 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCod
 今回の修正はやや複雑になっていますね。  
 いろいろと実装が入っていますが、注目すべきポイントは1点とおまけ1つです。
 
-<a id="markdown-日付型の型を変更" name="日付型の型を変更"></a>
-##### 日付型の型を変更
+<a id="markdown-codegenで自動生成される日付型の型を変更" name="codegenで自動生成される日付型の型を変更"></a>
+##### Codegenで自動生成される日付型の型を変更
 
 本セクションでの目的である日付型の変換をしている部分はここです。  
 
@@ -556,7 +576,11 @@ $ docker-compose exec play-scala sbt slickCodeGen
 
 実行後に出力されたファイルの一部がこちら
 
+`output/codegen/com/example/Tables.scala`
 ```scala
+// ... 省略
+import java.time.{LocalDateTime}
+// ... 省略
 /** Database column posted_at SqlType(DATETIME) */
 val postedAt: Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
 /** Database column created_at SqlType(DATETIME) */
@@ -566,15 +590,634 @@ val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ```
 
 ちゃんとLocalDateTimeになっていますね。  
-
 長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。
+
+<a id="markdown-slickのモデルを実装" name="slickのモデルを実装"></a>
+## slickのモデルを実装
+
+基本的なslickの設定が完了したので、evolutionsで作成されたモデルなどを利用しながら実際のシステムで利用するモデルを作成してきます。  
+実装方法が何種類かあるのですが、利用してるRDBに応じて少し対応方法が変わります。  
+今回はMySQLを利用しているのでそれ前提で記載していきます。  
+
+<a id="markdown-slick33とmysqlを組み合わせた場合の日付型対応" name="slick33とmysqlを組み合わせた場合の日付型対応"></a>
+### Slick3.3とMySQLを組み合わせた場合の日付型対応
+
+SlickはRDBごとに日付関連を扱うときに利用する型が違っています。  
+特にMySQLはほぼ全て文字列として取り扱おうとするため、そのままの状態では利用しづらくなってしまいます。  
+今回はこの部分を自前の追加実装で吸収していきたいと思います。  
+対応方法は何種類かあるのですが、今回はそのうち採用していく方法の実装のみ行います。  
+おまけ部分で他の実装方法についても紹介しますので、気になる方はおまけをご覧ください。  
+
+<a id="markdown-日付関連のrdbごと比較" name="日付関連のrdbごと比較"></a>
+#### 日付関連のRDBごと比較
+
+RDBごとに違うとありましたが、実際に確認してみます。  
+以下のリンクから公式サイトの情報が確認できますが、リンク先の情報の画像も合わせて載せておきます。  
+[https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)
+
+[MySQLの場合]  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/03_profile_mysql.png" width="450">
+
+[Postgresの場合]  
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/04_profile_postgres.png" width="450">
+
+[Oracleの場合]
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/05_profile_oracle.png" width="450">
+
+このようにそれぞれ日付型の型に割り当てられたSQL Typeに差があります。  
+細かいことは不明ですが厳密にやろうとするとMySQLが日付関連のデータの持ち方に振れ幅が大きくてparserが統一できなかったのかもしれないですね。 (わかりませんが)  
+
+<a id="markdown-未対応の場合のエラーと原因" name="未対応の場合のエラーと原因"></a>
+### 未対応の場合のエラーと原因
+
+特に何も対応せずに今のままの状態で実装を進めるとDBアクセスを行なったタイミングで以下のようなエラーになります。  
+
+```sh
+play.api.http.HttpErrorHandlerExceptions$$anon$1: Execution exception[[DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10]]
+        at play.api.http.HttpErrorHandlerExceptions$.throwableToUsefulException(HttpErrorHandler.scala:332)
+        at play.api.http.DefaultHttpErrorHandler.onServerError(HttpErrorHandler.scala:251)
+        at play.core.server.AkkaHttpServer$$anonfun$2.applyOrElse(AkkaHttpServer.scala:421)
+        at play.core.server.AkkaHttpServer$$anonfun$2.applyOrElse(AkkaHttpServer.scala:417)
+        at scala.concurrent.impl.Promise$Transformation.run(Promise.scala:453)
+        at akka.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:55)
+        at akka.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:92)
+        at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+        at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:94)
+        at akka.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:92)
+Caused by: java.time.format.DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10
+        at java.time.format.DateTimeFormatter.parseResolved0(DateTimeFormatter.java:1949)
+        at java.time.format.DateTimeFormatter.parse(DateTimeFormatter.java:1851)
+        at java.time.LocalDateTime.parse(LocalDateTime.java:492)
+        at java.time.LocalDateTime.parse(LocalDateTime.java:477)
+        at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:404)
+        at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:389)
+        at slick.jdbc.SpecializedJdbcResultConverter$$anon$1.read(SpecializedJdbcResultConverters.scala:26)
+        at slick.jdbc.SpecializedJdbcResultConverter$$anon$1.read(SpecializedJdbcResultConverters.scala:24)
+        at slick.relational.ProductResultConverter.read(ResultConverter.scala:54)
+        at slick.relational.ProductResultConverter.read(ResultConverter.scala:44)
+```
+
+重要な部分は以下の部分です。  
+`Execution exception[[DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10]]`  
+
+日付型のparseでエラーになっていますね。  
+
+ここから少し難しくなるのですが、このエラーを調査していきます。  
+
+エラー調査のために、先ほどのログをもう少し細かくみてみましょう。  
+そうすると以下のような出力を見つけることができると思います。  
+`at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:389)`  
+
+これが今回エラーが発生している箇所です。  
+この`slic.jdbc.MySQLProfile`がどこで利用されているかというと、codegenで自動生成したModelにあります。  
+
+codegenで生成されたコードを見てみると、以下のようにMySQLProfileを利用しているところがありますね。  
+```scala
+object Tables extends {
+  val profile = slick.jdbc.MySQLProfile
+} with Tables
+```
+
+ここで読み込んだprofileで実装されているLocalDateTimeの`getValue`というところに問題があるというわけです。  
+
+では、引き続きコードを追ってみましょう。  
+早速MySQLProfileの`getValue`を見ていきます。  
+以下が、そのコードです。  
+```scala
+    override val localDateTimeType : LocalDateTimeJdbcType = new LocalDateTimeJdbcType {
+      override def sqlType : Int = {
+        java.sql.Types.VARCHAR
+      }
+      override def setValue(v: LocalDateTime, p: PreparedStatement, idx: Int) : Unit = {
+        p.setString(idx, if (v == null) null else v.toString)
+      }
+      // 今回エラーが発生しているのはこのメソッド
+      override def getValue(r: ResultSet, idx: Int) : LocalDateTime = {
+        r.getString(idx) match {
+          case null => null
+          // 具体的にはこの parse 処理部分です。
+          case iso8601String => LocalDateTime.parse(iso8601String)
+        }
+      }
+      override def updateValue(v: LocalDateTime, r: ResultSet, idx: Int) = {
+        r.updateString(idx, if (v == null) null else v.toString)
+      }
+      override def valueToSQLLiteral(value: LocalDateTime) : String = {
+        stringToMySqlString(value.toString)
+      }
+    }
+```
+
+LocalDateTimeの値を`getValue`を見てください。  
+この中でDBから受け取った日付の文字列をparseしています。  
+今回はここでエラーが出てしまうということなのです。  
+
+LocalDateTime.parseのデフォルトフォーマットは`yyyy-MM-ddTHH:mm:ss`というフォーマットになっているため、このフォーマットに合わない日付文字列は全てparseで落ちてしまいます。  
+今回の場合`yyyy-MM-dd HH:mm:ss`の文字列で渡ってしまうため`T`が足りておらず、エラーになってしまうわけですね。  
+indexもちょうど10番目です。  
+
+エラーの内容と原因がわかったので、次はこれを解決していきましょう。  
+
+<a id="markdown-localdatetimeのparseエラー対応方針決め" name="localdatetimeのparseエラー対応方針決め"></a>
+### LocalDateTimeのparseエラー対応方針決め
+
+ここで対応方針を決める必要があります。  
+詳細はここでは割愛しますが、対応方針として考えられるものとして3つほどあります。
+
+1. 一度Stringで受け取るようにしてModel <-> DB Valeの変換を`def *`などで自前実装する
+1. MappedColumnTypeを利用して、implict valの形でマッピングを作成する
+1. MySQLProfileを継承して独自Profileを作成する (公式推奨)
+
+それぞれメリット/デメリット向いている用途などがありますが、今回は３番目の独自Profileを実装する方式で対応をしていきたいと思います。  
+
+この方法を選択する理由はシンプルに`公式推奨`だからです。  
+また私は一番理解しやすいのは1番だと考えていて、それがrookies資料としては適切なのではと悩んだのですが、全てのテーブルのモデルのmappingを書いていくのは効率が悪すぎるので、少し難しい感じはしてしまいますがProfile実装を選択しています。  
+
+とはいえ、Profile拡張という言葉の持つパワーのせいで難しい気がするだけで、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応でもあります。  
+あまり難しく考えずに「既存実装コピペしてLocalDateTimeのformatterだけ直す」と思っていただければ、心理的負荷は減るのかなと思います。  
+
+<a id="markdown-独自profile実装" name="独自profile実装"></a>
+### 独自Profile実装
+
+では、独自Profileの実装をしていきましょう。  
+先ほどお話ししたように公式に実装方法が書かれているので、そちらを参照していきます。  
+[https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)
+
+文章でいうと以下の部分ですね。  
+```
+If you need to customise these formats, you can by extending a Profile and overriding the appropriate methods. For an example of this see: https://github.com/d6y/instant-etc/blob/master/src/main/scala/main.scala#L9-L45. Also of use will be an example of a full mapping, such as: https://github.com/slick/slick/blob/v3.3.0/slick/src/main/scala/slick/jdbc/JdbcTypesComponent.scala#L187-L365.
+```
+
+この公式実装はH2DBを元に書かれているので、これを参考にMySQLのコードを作っていきます。  
+公式の拡張実装と、以下のMySQLProfileの実装を比較しながら対応していくとわかりやすいと思います。  
+[MySQLProfile.scala#L389-L415](https://github.com/slick/slick/blob/master/slick/src/main/scala/slick/jdbc/MySQLProfile.scala#L389-L415)
+
+では、以下に最終的な実装を記載します。  
+
+`app/slick/profile/MyDBProfile.scala`
+```scala
+package slick.profile
+
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatterBuilder
+import java.time.temporal.ChronoField
+
+/* LocalDateTimeをプロダクトに適した形に処理できるようにProfile設定を独自に拡張 */
+trait MyDBProfile extends slick.jdbc.JdbcProfile with slick.jdbc.MySQLProfile {
+  import java.sql.{PreparedStatement, ResultSet}
+  import slick.ast.FieldSymbol
+
+  @inline
+  private[this] def stringToMySqlString(value : String) : String = {
+    value match {
+      case null => "NULL"
+      case _ =>
+        val sb = new StringBuilder
+        sb append '\''
+        for(c <- value) c match {
+          case '\'' => sb append "\\'"
+          case '"' => sb append "\\\""
+          case 0 => sb append "\\0"
+          case 26 => sb append "\\Z"
+          case '\b' => sb append "\\b"
+          case '\n' => sb append "\\n"
+          case '\r' => sb append "\\r"
+          case '\t' => sb append "\\t"
+          case '\\' => sb append "\\\\"
+          case _ => sb append c
+        }
+        sb append '\''
+        sb.toString
+    }
+  }
+
+  override val columnTypes = new JdbcTypes
+
+  // Customise the types...
+  class JdbcTypes extends super.JdbcTypes {
+
+   // PostgresのProfileを参考にミリ秒も含めて対応できるformatterを実装
+   private[this] val formatter = {
+      new DateTimeFormatterBuilder()
+        .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        .optionalStart()
+        .appendFraction(ChronoField.NANO_OF_SECOND,0,9,true)
+        .optionalEnd()
+        .toFormatter()
+    }
+
+    override val localDateTimeType : LocalDateTimeJdbcType = new LocalDateTimeJdbcType {
+      override def sqlType : Int = {
+        java.sql.Types.VARCHAR
+      }
+
+      override def setValue(v: LocalDateTime, p: PreparedStatement, idx: Int) : Unit = {
+        p.setString(idx, if (v == null) null else v.toString)
+      }
+      override def getValue(r: ResultSet, idx: Int) : LocalDateTime = {
+        r.getString(idx) match {
+          case null       => null
+          // 文字列から日付型にパースできるようにparseにformatterを渡す
+          case dateString => LocalDateTime.parse(dateString, formatter)
+        }
+      }
+      override def updateValue(v: LocalDateTime, r: ResultSet, idx: Int) = {
+        r.updateString(idx, if (v == null) null else v.toString)
+      }
+      override def valueToSQLLiteral(value: LocalDateTime) : String = {
+        stringToMySqlString(value.toString)
+      }
+    }
+  }
+}
+
+object MyDBProfile extends MyDBProfile
+```
+
+結構なコード量に見えますが、ほとんどコピペしただけです。  
+大事な部分は以下のパース部分ですね。  
+```
+case dateString => LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+```
+
+ほとんどは元のMySQLProfileの実装をコピーして持ってきているだけです。  
+しかしLocalDateTimeのparse処理が修正されているので、このProfileを利用してSlickに設定すれば特に他には何もすることなくLocalDateTimeがモデルにマッピングできるようになります。  
+
+ちょっと話は逸れますが`.appendFraction`便利ですね。  
+自分で文字列処理するの嫌だったので、とてもありがたいです。  
+
+少し長くなりましたが日付対応はこれで完了です。  
 
 <a id="markdown-play-slickを利用してモデルの操作を行う" name="play-slickを利用してモデルの操作を行う"></a>
 ### play-slickを利用してモデルの操作を行う
 
+最後に今まで作成したモデルやProfileを利用して、slickへ問合せを行うためのモデルを作成していきます。  
+ここまでの実装はplay-slickは関係なくslickのレイヤーでの実装でした。  
+ここからはplay-slickの機能を利用して、モデル作成から簡単なデータ取得まで進めてみたいと思います。  
+
+<a id="markdown-そもそもplay-slickとは" name="そもそもplay-slickとは"></a>
+#### そもそもplay-slickとは？
+
+私自身もあまりよくわかっていなかったのですが、そもそもplay-slickとはなんなのでしょうか。  
+と言うことで、公式情報を引用させていただきます。
+
+```
+The Play Slick module makes Slick a first-class citizen of Play, and consists of two primary features:
+
+・Integration of Slick into Play’s application lifecycle.
+・Support for Play database evolutions.
+```
+
+evolutionsをサポートしているというのは、比較的どうでもいいのでもう片方に注目します。  
+
+私もなんとなく思ってましたが、やっぱりslickをplayのライフサイクルの中に組み込んでくれるのがplay-slickのようです。  
+設定情報からDB connectionを作成したり破棄したりの管理を良い感じにやってくれるもの、くらいの認識で良いのではないかと思います。  
+
+なので、他のモデルであったり先ほどまで作成していたprofileなどライフサイクルと関係ない部分は通常のslickと変わらないと言うことですね。  
+
+<a id="markdown-play-slickのコード上の機能" name="play-slickのコード上の機能"></a>
+#### play-slickのコード上の機能
+
+では、そのライフサイクルが云々というのがコード上どうなるかを確認してみます。  
+公式サイトのページでは[こちらを参照](https://www.playframework.com/documentation/2.8.x/PlaySlick#DatabaseConfig-via-runtime-dependency-injection)  
+
+公式サイトの例ではcontrollerに対してDIするような実装になっていますね。  
+以下はあくまで「サンプルコード」で実際に利用するコードではありませんが、この実装を今の`TweetController`に適用する以下のような実装になります。(実装する必要はありません)
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+@Singleton
+class TweetController @Inject()(
+  protected val dbConfigProvider: DatabaseConfigProvider, // play-slick
+  val controllerComponents: ControllerComponents
+)(implicit ec: ExecutionContext)
+extends BaseController
+with I18nSupport
+with HasDatabaseConfigProvider[JdbcProfile]{ // play-slick
+
+  // HasDatabaseConfigProviderの持つprofileからapiを取得
+  // slickでいうところのslick.jdbc.MySQLProfile.api._
+  import profile.api._
+
+// ...省略...
+}
+
+```
+
+`// play-slick` とコメントを書いた部分がplay-slick用の実装です。  
+実装の実態は`HasDatabaseConfigProvider`が持っていて、その中で利用されている変数として`DatabaseConfigProvider`がいます。  
+この`DatabaseConfigProvider`をplay-slickが設定ファイルから組み立ててInject、その結果適切なprofileを読み取れるようになるという仕組みです。  
+
+Controllerクラス内部の`import dbConfig.profile.api._`の部分がProfileからslickの処理に必要な機能をimportしている部分になります。  
+コメントにも記載がありますが、そのままのslickだと`import slick.profile.MySQLProfile.api._`のように利用してるものに当たるものです。  
+
+play-slickを利用することでRDBの違いを簡単に設定ファイルに隠蔽することができますね。  
+
+では、このplay-slickを利用して実際に機能を作成していきます。  
+今回はplay-slickのサンプルプロジェクトを参考に`Repository`レイヤーを作成する形で実装を行っていきます。  
+ここで紹介した`DatabaseConfigProvider`関連のDIもControllerではなくRepositoryに行っていきましょう。  
+
+<a id="markdown-tweet関連のdbアクセス用クラスを作成する" name="tweet関連のdbアクセス用クラスを作成する"></a>
+#### Tweet関連のDBアクセス用クラスを作成する
+
+では、さっそくTweet Tableにアクセスするために必要なクラスを作成していきます。  
+slick-codegeで作成したクラスや、play-slickのサンプルを参考にしながら作成していきます。  
+
+まずはモデル作成していくのですが、元々作成されていたTweetモデルを移動させて現在のtableに合わせて調整をします。  
+
+`app/models/Tweet.scala` -> `app/slick/models/Tweet.scala`  
+```scala
+package slick.models
+
+import java.time.LocalDateTime
+
+// case classについての説明は省略
+// 参考: https://docs.scala-lang.org/ja/tour/case-classes.html
+case class Tweet(
+  id:        Option[Long],
+  content:   String,
+  postedAt:  LocalDateTime = LocalDateTime.now,
+  createdAt: LocalDateTime = LocalDateTime.now,
+  updatedAt: LocalDateTime = LocalDateTime.now
+)
+```
+
+※ コンパイルするとmodels.Tweetを利用していた箇所でエラーになるので、適宜修正してください。slick.をつけてあげるだけで大丈夫なはずです。  
+
+次にRepositoryを作成していきましょう。  
+この実際は以下のページを参考に実装しています。  
+[Play公式のサンプルとして引用されている実装](https://github.com/playframework/play-slick/blob/master/samples/basic/app/dao/CatDAO.scala)  
+
+
+`app/slick/repositories/TweetRepository.scala`
+```scala
+package slick.repositories
+
+import java.time.LocalDateTime
+import play.api.db.slick.{HasDatabaseConfigProvider,DatabaseConfigProvider}
+import javax.inject.{Inject, Singleton}
+import slick.jdbc.{JdbcProfile, GetResult}
+import scala.concurrent.{Future, ExecutionContext}
+import slick.models.Tweet
+
+@Singleton
+class TweetRepository @Inject()(
+  protected val dbConfigProvider: DatabaseConfigProvider
+)(implicit ec: ExecutionContext)
+extends HasDatabaseConfigProvider[JdbcProfile] {
+  import profile.api._
+
+  private val tweet = new TableQuery(tag => new TweetTable(tag))
+
+  // ########## [DBIO Methods] ##########
+
+  /**
+    * tweetを全件取得
+    */
+  def all(): Future[Seq[Tweet]] = db.run(tweet.result)
+
+  // ########## [Table Mapping] ##########
+  private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
+    def * = (id, content, postedAt, createdAt, updatedAt) <> (
+      (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
+        Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
+      },
+      (tweet: Tweet) => {
+        Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
+      }
+    )
+
+    def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(postedAt), Rep.Some(createdAt), Rep.Some(updatedAt))).shaped.<>({r=>import r._; _1.map(_=> Tweet.tupled((Option(_1.get), _2.get, _3.get, _4.get, _5.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    val id:        Rep[Long]          = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    val content:   Rep[String]        = column[String]("content", O.Length(120,varying=true))
+    val postedAt:  Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
+    val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")
+    val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
+  }
+}
+```
+
+少し長くなっていますが、一つずつ説明していきます。  
+まずクラス宣言の部分です。  
+
+```scala
+@Singleton
+class TweetRepository @Inject()(
+  protected val dbConfigProvider: DatabaseConfigProvider
+)(implicit ec: ExecutionContext)
+extends HasDatabaseConfigProvider[JdbcProfile] {
+  import profile.api._
+```
+
+この部分は前段で説明したControllerの実装とほぼ同じです。  
+Repositoryはインスタンスを複数持つ必要がない(とおもう)ので`@Singleton` を付与して、Singletonオブジェクトにしています。  
+
+また今回`(implicit ec: ExecutionContext)`の記述も追加しています。  
+slickは問合せ結果を`Future`型で返してくるため、Futureを利用するために必要なExecutionContextが必要になります。  
+そこでPlay標準で用意されているExecutionContextを利用できるように、クラス宣言時にDIで受け取るようにしています。  
+この辺はScalaの話になってしまうので本ハンズオンでは割愛します。  
+
+次に実装の下の部分にあるTable Mappingのブロックです。  
+
+```scala
+// ########## [Table Mapping] ##########
+private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
+
+  // Tableとのカラムマッピング
+  val id:        Rep[Long]          = column[Long]("id", O.AutoInc, O.PrimaryKey)
+  val content:   Rep[String]        = column[String]("content", O.Length(120,varying=true))
+  val postedAt:  Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
+  val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")
+  val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
+
+  // Plain SQLでデータ取得を行う用のマッピング
+  implicit def GetResultTweet(implicit e0: GetResult[Long], e1: GetResult[String], e2: GetResult[LocalDateTime]): GetResult[Tweet] = GetResult{
+    prs => import prs._
+    Tweet.tupled((Some(<<[Long]), <<[String], <<[LocalDateTime], <<[LocalDateTime], <<[LocalDateTime]))
+  }
+
+  // model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
+  def * = (id, content, postedAt, createdAt, updatedAt) <> (
+    (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
+      Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
+    },
+    (tweet: Tweet) => {
+      Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
+    }
+  )
+
+  // Maps whole row to an option. Useful for outer joins.
+  def ? = ((
+    Rep.Some(id),
+    Rep.Some(content),
+    Rep.Some(postedAt),
+    Rep.Some(createdAt),
+    Rep.Some(updatedAt)
+  )).shaped.<>(
+  { r =>
+    import r._;
+    _1.map( _=>
+        Tweet.tupled((
+          Option(_1.get), // モデル側はidがOptionなのでOptionで包んでいる
+          _2.get,
+          _3.get,
+          _4.get,
+          _5.get
+        ))
+  )},
+  (_:Any) =>
+    throw new Exception("Inserting into ? projection not supported.")
+  )
+}
+```
+
+これはslick-codegenで作成されたものを参考に修正を行っています。  
+
+以下の部分がTableとScala側で利用するためのデータ型のマッピングです。  
+`column[LocalDateTime]`の部分が、独自で作成してMyDBProfileのおかげでマッピングできるようになっている場所です。  
+この部分が通常のORMのモデル定義風ですよね。  
+
+```scala
+// Tableとのカラムマッピング
+val id:        Rep[Long]          = column[Long]("id", O.AutoInc, O.PrimaryKey)
+val content:   Rep[String]        = column[String]("content", O.Length(120,varying=true))
+val postedAt:  Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
+val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")
+val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
+```
+
+次に以下の部分。  
+```scala
+// Plain SQLでデータ取得を行う用のマッピング
+implicit def GetResultTweet(implicit e0: GetResult[Long], e1: GetResult[String], e2: GetResult[LocalDateTime]): GetResult[Tweet] = GetResult{
+  prs => import prs._
+  Tweet.tupled((Some(<<[Long]), <<[String], <<[LocalDateTime], <<[LocalDateTime], <<[LocalDateTime]))
+}
+```
+
+これはslickからPlain SQLを実行するときに利用されるマッピングです。  
+Plain SQLというのは以下のような方法でのDBIO実行です。  
+```scala
+sql"SELECT * FROM tweet".as[Tweet]
+```
+
+このas句を理解するために必要なimplicitというわけですね。  
+これがない場合には `as[(Long, String, LocalDateTime, LocalDateTime, LocalDateTime)]`のようにタプリで指定して利用する形になります。  
+
+なので、この実装は必ずしも必須の実装ではありません。  
+
+次に`def *`  
+これが一番重要で、slickからデータベースへアクセスしたときに通常利用されるマッピングの定義です。  
+
+```scala
+// model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
+def * = (id, content, postedAt, createdAt, updatedAt) <> (
+  (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
+    Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
+  },
+  (tweet: Tweet) => {
+    Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
+  }
+)
+```
+
+ここに定義した内容でselect, insert, updateなどの処理をDB側に上手くマッピングしてデータの流し込みや受け取りが行われます。  
+シンプルなものであればcodegenが生成した実装のように以下のように記述可能です。  
+
+```scala
+def * = (id, content, postedAt, createdAt, updatedAt) <> (TweetRow.tupled, TweetRow.unapply)
+```
+
+ただ今回はTweetモデルのIdがOptionになっているため、Tableとモデルの情報が完全に一致しないためにマッピングを書いています。  
+insert時には通常idはないけど、selectのときにはidは必ずあるという状態になるためこのような形になるわけですね。  
+
+これを上手いことやるための実装や設計は、各々でいくつか方法があると思います。  
+みなさんも慣れてきたら自分でがんばってみてください。多分楽しいので。  
+
+そして最後に`def ?`です。  
+
+```scala
+// Maps whole row to an option. Useful for outer joins.
+def ? = ((
+  Rep.Some(id),
+  Rep.Some(content),
+  Rep.Some(postedAt),
+  Rep.Some(createdAt),
+  Rep.Some(updatedAt)
+)).shaped.<>(
+{ r =>
+  import r._;
+  _1.map( _=>
+      Tweet.tupled((
+        Option(_1.get), // モデル側はidがOptionなのでOptionで包んでいる
+        _2.get,
+        _3.get,
+        _4.get,
+        _5.get
+      ))
+)},
+(_:Any) =>
+  throw new Exception("Inserting into ? projection not supported.")
+)
+```
+ここもコメントにあるように、idの部分をOptionで包むようにしています。  
+この実装は実は私もよくわかっていないのですが、データがないときにもなんかいい感じにしてくれるっぽいことが書いてありますね。  
+
+これでDBへアクセスするためのクラスが作成できました。  
+
+<a id="markdown-独自実装したprofileを利用するように設定する" name="独自実装したprofileを利用するように設定する"></a>
+#### 独自実装したprofileを利用するように設定する
+
+必要な実装は終わりましたがplay-slick関連の実装の中でprofileを指定する場所が見当たりませんでしたね。  
+ここでは独自実装したprofileを利用してslickが動いてくれるように設定をしていきます。  
+
+といっても、行うことは単純で`application.conf`を修正するだけです。  
+
+`conf/application.conf`
+```
+slick {
+  dbs {
+    default {
+      # 独自実装したprofileを指定
+      profile = "slick.profile.MyDBProfile$"
+      db {
+        driver   = com.mysql.cj.jdbc.Driver,
+        url      = "jdbc:mysql://db:3306/twitter_clone?useSSL=false",
+        user     = "root",
+        password = "root",
+      }
+    }
+  }
+  codegen {
+    # ここでの.はroot directoryとなる
+    outputDir = "./output/codegen"
+  }
+}
+```
+
+slick関連の設定だけ抜粋しています。  
+`slick.dbs.default.profile`の部分を修正しているだけです。  
+これによってplay-slickがこの設定を読みに行ってくれるようになります。  
+
+confの設定はこれで完了です。  
+ここまででslickに関する実装は完了です。  
+
+<a id="markdown-dbの値を利用して一覧ページを表示する" name="dbの値を利用して一覧ページを表示する"></a>
+## DBの値を利用して一覧ページを表示する
 
 
 <a id="markdown-tips" name="tips"></a>
 ## Tips
 
 - db名変更をした場合などは`docker/db/mysql_data/*`を削除してからコンテナの再起動をする
+
+<a id="markdown-todo" name="todo"></a>
+## TODO
+
+- play-slickを活用せずに普通にslick使ってしまっている
+  - codegenで生成したコードとplay-slick用の調整をしつつモデルを作る
+
+
+
