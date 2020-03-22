@@ -38,6 +38,7 @@ trait MyDBProfile extends slick.jdbc.JdbcProfile with slick.jdbc.MySQLProfile {
 
   // Customise the types...
   class JdbcTypes extends super.JdbcTypes {
+
     // PostgresのProfileを参考にミリ秒も含めて対応できるformatterを実装
     private[this] val formatter = {
       new DateTimeFormatterBuilder()

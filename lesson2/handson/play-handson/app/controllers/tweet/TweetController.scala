@@ -5,13 +5,12 @@ import play.api.mvc.ControllerComponents
 import play.api.mvc.BaseController
 import play.api.mvc.Request
 import play.api.mvc.AnyContent
-import models.Tweet
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
-import slick.profile.MyDBProfile.api._
-import scala.concurrent.ExecutionContext.Implicits.global
-import models.TweetTable
+import scala.concurrent.ExecutionContext
+import slick.models.Tweet
+import slick.repositories.TweetRepository
 
 case class TweetFormData(content: String)
 
@@ -23,9 +22,13 @@ case class TweetFormData(content: String)
   *   ActionはcontrollerComponents.actionBuilderと同じ
   */
 @Singleton
-class TweetController @Inject()(val controllerComponents: ControllerComponents)
+class TweetController @Inject()(
+  val controllerComponents: ControllerComponents,
+  tweetRepository: TweetRepository
+)(implicit ec: ExecutionContext)
 extends BaseController
 with I18nSupport {
+
   // DBのMockとして利用したいので、mutableなクラスのフィールドとして定義し直す
   val tweets = scala.collection.mutable.ArrayBuffer((1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}")): _*)
 
@@ -43,11 +46,8 @@ with I18nSupport {
     */
   def list() =  Action async { implicit request: Request[AnyContent] =>
     // DBから値を取得してreturnするように修正
-    val db = Database.forConfig("slick.dbs.default.db")
     for {
-      results <- db.run(
-       TweetTable.query.map(x => x).result
-      )
+      results <- tweetRepository.all()
     } yield {
       Ok(views.html.tweet.list(results))
     }

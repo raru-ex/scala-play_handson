@@ -3,7 +3,7 @@ package slick.samples
 import java.time.LocalDateTime
 import slick.jdbc.{GetResult}
 import java.time.format.DateTimeFormatter
-import models.Tweet
+import slick.models.Tweet
 
 /* def *のtupleでマッピングをするサンプル実装 */
 object TupleMappedTweetTable extends {
@@ -47,8 +47,8 @@ trait TupleMappedTweetTable {
 
     def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(postedAt), Rep.Some(createdAt), Rep.Some(updatedAt))).shaped.<>({r=>import r._; _1.map(_=> Tweet.tupled((Option(_1.get), _2.get, LocalDateTime.parse(_3.get, format), LocalDateTime.parse(_4.get, format), LocalDateTime.parse(_5.get, format))))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
-    val id:        Rep[Long]          = column[Long]("id", O.AutoInc, O.PrimaryKey)
-    val content:   Rep[String]        = column[String]("content", O.Length(120,varying=true))
+    val id:        Rep[Long]   = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    val content:   Rep[String] = column[String]("content", O.Length(120,varying=true))
     val postedAt:  Rep[String] = column[String]("posted_at")
     val createdAt: Rep[String] = column[String]("created_at")
     val updatedAt: Rep[String] = column[String]("updated_at")
