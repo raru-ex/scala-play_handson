@@ -16,6 +16,8 @@ libraryDependencies ++= Seq(
   // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
   // https://github.com/playframework/play-slick#all-releases
   "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+  // 指定すべきバージョンは以下のリンク先
+  // https://scala-slick.org/doc/3.3.1/database.html
   "mysql"                   % "mysql-connector-java"  % "6.0.6",
   "com.typesafe"            % "config"                % "1.4.0"
 )
