@@ -1204,20 +1204,213 @@ slick関連の設定だけ抜粋しています。
 confの設定はこれで完了です。  
 ここまででslickに関する実装は完了です。  
 
-<a id="markdown-dbの値を利用して一覧ページを表示する" name="dbの値を利用して一覧ページを表示する"></a>
-## DBの値を利用して一覧ページを表示する
+次の章からは、これらを利用してCRUDを修正していきます。  
 
+## おまけ
+
+ここからはslickのマッピングの別の書き方を紹介します。  
+今回はあくまでLocalDateTimeに対しての記載になりますが、独自型やその他についてもこれらを利用して対応できます。  
+
+### MappedColumnTypeを利用したマッピング
+
+通常であればslickはこの方法で外部の型をマッピングできるようにしていきます。  
+ただし、今回のLocalDateTimeについては例外でこの方法ではシンプルに実装できませんでした。  
+
+この実装については[こちら](https://qiita.com/lightstaff/items/cb247f98b9bb12213de9)の記事を参考にさせていただいています。
+
+実装を見た方が早いので、コードを載せます。  
+
+`app/slick/samples/SlickMappedMySQLDateTime.scala`
+```scala
+package slick.samples
+
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+
+/* MySQLDateTimeを直接マッピング対象にできないので、mappingに利用するクラスを作成する */
+case class MySQLDateTime(v: String) {
+  def toLocalDateTime: LocalDateTime = LocalDateTime.parse(v, MySQLDateTime.format)
+}
+
+object MySQLDateTime {
+  val format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+  def apply(time: LocalDateTime): MySQLDateTime = MySQLDateTime(time.format(format))
+}
+
+
+trait LocalDateTimeColumMapper {
+  val profile: slick.jdbc.JdbcProfile
+  import profile.api._
+
+  implicit lazy val localDateTimeMapper = MappedColumnType.base[MySQLDateTime, String] (
+    { ldt => ldt.v },
+    { str => MySQLDateTime(str)}
+  )
+}
+```
+
+まず`MySQLDateTime`という`case class`を実装しています。  
+ここが使いづらい原因になっている箇所です。  
+
+本当は直接LocalDateTimeに紐づけたいのですが、MySQLProfileにでLocalDateTimeへのマッピングが用意されているので、ここで作成したMappedColumnTypeより先にMySQLProfileのgetValue処理が呼び出されてしまうようでした。  
+
+
+例えば以下のようなMappingを、作成して。  
+
+```scala
+MappedColumnType.base[LocalDateTime, String] (
+    { ldt => ldt.toString },
+    { str => LocalDateTime.parse(str, formatter)}
+  )
+```
+
+さらにモデル側で以下のように宣言をしてみます。  
+
+`val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")`
+
+この場合Profileに定義されているLocalDateTimeのマッピングが先に処理されて、その後にMappedColumnTypeの処理に移ろうします。  
+なので結局はgetValueのLocalDateTime.parseの箇所で落ちてしまうわけですね。  
+
+かといってStringに対してのmappingにしてしまうと、普通にStringで使いたいものについても変換がかかってしまいます。  
+そのためLocalDateTimeを直接使うことができません。  
+
+そのため一度経由するためのクラスとして独自の`MySQLDateTime`という型が必要になってしまったと言うわけです。  
+既に若干冗長になってしまいました。  
+
+しかし、この実装だとまたもうちょっと大変なところがあります。  
+モデル側の実装を見てみましょう。  
+
+`app/slick/samples/SlickMappedTweetV1.scala`
+```scala
+package slick.samples
+
+import java.time.LocalDateTime
+import slick.jdbc.{GetResult}
+import slick.models.Tweet
+
+// ...一部を抜粋...
+
+  /* Slick3.3ではDATETIME, TIMESTAMPなどをStringで受け取るため、モデルとの相互変換部分で吸収する */
+  implicit def GetResultTweet(implicit e0: GetResult[Long], e1: GetResult[String], e2: GetResult[MySQLDateTime]): GetResult[Tweet] = GetResult{
+    prs => import prs._
+    Tweet.tupled((
+      <<[Option[Long]],
+      <<[String],
+      <<[MySQLDateTime].toLocalDateTime,
+      <<[MySQLDateTime].toLocalDateTime,
+      <<[MySQLDateTime].toLocalDateTime
+    ))
+  }
+
+  /* Slick3.3ではDATETIME, TIMESTAMPなどをStringで受け取るため、モデルとの相互変換部分で吸収する */
+ class SlickMappedTweetTableV1(_tableTag: Tag) extends profile.api.Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
+
+    def * = (id, content, postedAt, createdAt, updatedAt) <> (
+      (x: (Long, String, MySQLDateTime, MySQLDateTime, MySQLDateTime)) => {
+        Tweet(
+          Some(x._1),
+          x._2,
+          x._3.toLocalDateTime,
+          x._4.toLocalDateTime,
+          x._5.toLocalDateTime
+        )
+      },
+      (tweet: Tweet) => {
+        Some((
+          tweet.id.getOrElse(0L),
+          tweet.content,
+          MySQLDateTime(tweet.postedAt.toString),
+          MySQLDateTime(tweet.createdAt.toString),
+          MySQLDateTime(tweet.updatedAt.toString)
+        ))
+      }
+    )
+
+    def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(postedAt), Rep.Some(createdAt), Rep.Some(updatedAt))).shaped.<>({r=>import r._; _1.map(_=> Tweet.tupled((Option(_1.get), _2.get, MySQLDateTime(_3.get.toString).toLocalDateTime, MySQLDateTime(_4.get.toString).toLocalDateTime, MySQLDateTime(_5.get.toString).toLocalDateTime)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+```
+
+実装を見るとわかりますが、せっかくMappedColumnTypeをしているのにモデル側でも取り回しの処理をケアしてあげないといけない状態になっています。  
+
+このようにMappedColumnTypeでの実装だと、必要になるコード量は増えるのに結局ケアもしないといけないということで手間が倍に増えてしまいました。  
+そのため今回のケースについては適切ではなさそうです。  
+
+### Stringのまま受け取って個別にマッピング
+
+こちらは実装の中身を理解しやすく、手間は少しかかりますがシンプルな実装だと思います。  
+
+`app/slick/samples/TupleMappedTweet.scala`
+```scala
+package slick.samples
+
+import java.time.LocalDateTime
+import slick.jdbc.{GetResult}
+import java.time.format.DateTimeFormatter
+import slick.models.Tweet
+
+/* def *のtupleでマッピングをするサンプル実装 */
+object TupleMappedTweetTable extends {
+  val profile    = slick.jdbc.MySQLProfile
+} with TupleMappedTweetTable
+
+trait TupleMappedTweetTable {
+  val profile: slick.jdbc.JdbcProfile
+  val format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+  import profile.api._
+
+  /* Slick3.3ではDATETIME, TIMESTAMPなどをStringで受け取るため、モデルとの相互変換部分で吸収する */
+  implicit def GetResultTweet(implicit e0: GetResult[Long], e1: GetResult[String]): GetResult[Tweet] = GetResult{
+    prs => import prs._
+    Tweet.tupled((
+      <<[Option[Long]],
+      <<[String],
+      LocalDateTime.parse(<<[String], format),
+      LocalDateTime.parse(<<[String], format),
+      LocalDateTime.parse(<<[String], format)
+    ))
+  }
+
+  /* Slick3.3ではDATETIME, TIMESTAMPなどをStringで受け取るため、モデルとの相互変換部分で吸収する */
+  class TupleMappedTweetTable(_tableTag: Tag) extends profile.api.Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
+    def * = (id, content, postedAt, createdAt, updatedAt) <> (
+      (x: (Long, String, String, String, String)) => {
+        Tweet(
+          Some(x._1),
+          x._2,
+          LocalDateTime.parse(x._3, format),
+          LocalDateTime.parse(x._4, format),
+          LocalDateTime.parse(x._5, format)
+        )
+      },
+      (tweet: Tweet) => {
+        Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt.toString, tweet.createdAt.toString, tweet.updatedAt.toString))
+      }
+    )
+
+    def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(postedAt), Rep.Some(createdAt), Rep.Some(updatedAt))).shaped.<>({r=>import r._; _1.map(_=> Tweet.tupled((Option(_1.get), _2.get, LocalDateTime.parse(_3.get, format), LocalDateTime.parse(_4.get, format), LocalDateTime.parse(_5.get, format))))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    val id:        Rep[Long]   = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    val content:   Rep[String] = column[String]("content", O.Length(120,varying=true))
+    val postedAt:  Rep[String] = column[String]("posted_at")
+    val createdAt: Rep[String] = column[String]("created_at")
+    val updatedAt: Rep[String] = column[String]("updated_at")
+  }
+
+  lazy val query = new TableQuery(tag => new TupleMappedTweetTable(tag))
+}
+```
+
+これは`def *`などなど、変換が必要な場所それぞれで丁寧に処理していくパターンですね。  
+対応方法としてはわかりやすいのかなと思います。  
+
+ただ、全てのモデルや全ての日付型のマッピングでコツコツ実装をしてあげないといけないのでテーブル数や日付型データを扱う数が増えると大変です。  
+
+そのため今回のケースについては、やはり好ましい実装ではなさそうです。  
 
 <a id="markdown-tips" name="tips"></a>
 ## Tips
 
 - db名変更をした場合などは`docker/db/mysql_data/*`を削除してからコンテナの再起動をする
-
-<a id="markdown-todo" name="todo"></a>
-## TODO
-
-- play-slickを活用せずに普通にslick使ってしまっている
-  - codegenで生成したコードとplay-slick用の調整をしつつモデルを作る
-
 
 
