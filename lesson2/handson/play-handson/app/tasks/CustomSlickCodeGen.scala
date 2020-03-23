@@ -59,8 +59,7 @@ object CustomSlickCodeGen extends App {
         // datetimeはデファオルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
         override def rawType = model.tpe match {
           case "java.sql.Timestamp" => "LocalDateTime"
-          case _                    =>
-            super.rawType
+          case _                    => super.rawType
         }
       }
     }

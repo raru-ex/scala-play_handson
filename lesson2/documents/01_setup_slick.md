@@ -34,9 +34,10 @@
             - [play-slickのコード上の機能](#play-slickのコード上の機能)
             - [Tweet関連のDBアクセス用クラスを作成する](#tweet関連のdbアクセス用クラスを作成する)
             - [独自実装したprofileを利用するように設定する](#独自実装したprofileを利用するように設定する)
-    - [DBの値を利用して一覧ページを表示する](#dbの値を利用して一覧ページを表示する)
+    - [おまけ](#おまけ)
+        - [MappedColumnTypeを利用したマッピング](#mappedcolumntypeを利用したマッピング)
+        - [Stringのまま受け取って個別にマッピング](#stringのまま受け取って個別にマッピング)
     - [Tips](#tips)
-    - [TODO](#todo)
 
 <!-- /TOC -->
 
@@ -67,6 +68,8 @@ evolutions,
 // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
 // https://github.com/playframework/play-slick#all-releases
 "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+// 指定すべきバージョンは以下のリンク先
+// https://scala-slick.org/doc/3.3.1/database.html
 "mysql"                   % "mysql-connector-java"  % "6.0.6",
 ```
 
@@ -91,6 +94,8 @@ libraryDependencies ++= Seq(
   // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
   // https://github.com/playframework/play-slick#all-releases
   "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+  // 指定すべきバージョンは以下のリンク先
+  // https://scala-slick.org/doc/3.3.1/database.html
   "mysql"                   % "mysql-connector-java"  % "6.0.6",
 )
 ```
@@ -230,7 +235,7 @@ mysql> show tables;
 <a id="markdown-slick-codegenでslickのモデルを作成" name="slick-codegenでslickのモデルを作成"></a>
 ### slick-codegenでslickのモデルを作成
 
-slick-codegenというのはDBのtable情報からslickで利用するモデルを自動生成してくれるライブラリです。
+slick-codegenというのはDBのtable情報からslickで利用するモデルを自動生成してくれるライブラリです。  
 codegeはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
 今回はsbt taskとして登録して手動実行できるように設定してきますが、sbtについては詳しく知らないため、設定方法のみ記述し詳細については割愛させていただきます。  
 
@@ -246,13 +251,13 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen")
 ```
 
 1行目で`slickCodeGen`という名前でコマンド(Task)のインスタンスを作成しています。  
-2行目ではそのタスク名に対して、特定のクラス処理を登録するようなことをしています。※ 詳細は理解できていません。
+2行目ではそのタスク名に対して、特定のクラス処理を登録するようなことをしています。※ 詳細は理解できていません。  
 sbtでは`:=`を演算子を利用してKeyに対しての実態を定義していきます。  
 
-ここでは`com.example.SlickCodeGen`というクラスを登録しています。  
-そのためこれから、この名前に一致するクラスを作成していきます。
+ここでは`com.example.SlickCodeGen`というクラスを登録していますね。  
+そのためこれから、この名前に一致するクラスを作成していきます。  
 
-また`toTask()`に渡すときに、先頭にスペースを追加していますが、これがないと正常にファイルの呼び出しが行えませんので注意してください。理由は理解していません。  
+また`toTask()`に渡すときに、先頭にスペースを追加していますが、これがないと正常にファイルの呼び出しが行えませんので注意してください。  
 
 <a id="markdown-slickcodegenの実行ファイルを作成する" name="slickcodegenの実行ファイルを作成する"></a>
 #### SlickCodeGenの実行ファイルを作成する
@@ -338,7 +343,7 @@ slick部分の構造が少し変更されているので気をつけてくださ
 <a id="markdown-typesafeconfig導入の補足" name="typesafeconfig導入の補足"></a>
 ##### TypesafeConfig導入の補足
 
-通常のplayでの実装ではControllerへのDIからconfigを利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムになるのでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
+通常のplayではconfigはControllerへのDIから利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
 
 <a id="markdown-slickcodegen-taskの実行" name="slickcodegen-taskの実行"></a>
 #### SlickCodeGen Taskの実行
@@ -360,7 +365,7 @@ output
             └── Tables.scala
 ```
 
-今回はevolutionsのテーブルも対象に取られているため、かなり`うわっ...`となるファイルになっていると思いますが、Tweet部分に限れば以下のようになっています。   
+今回はevolutionsのテーブルも対象に取られているため、かなり`うわっ...`となるファイルになっていると思いますが、Tweet部分に限れば以下の部分だけです。   
 
 `output/codegen/com/example/Tables.scala`
 ```scala
@@ -394,6 +399,7 @@ slick-codegenではTimestampやDatetimeを`java.sql.Timestamp`にMappingして�
 
 まずは`conf/evolutions/default/1.sql`を修正してきます。  
 日付関連のデータを持っていなかったので、よくある日付型カラムを追加していきましょう。  
+ついでにシステムから利用するためのサンプルデータも追加しています。  
 
 ```sql
 -- Tweet schema
@@ -495,8 +501,7 @@ object CustomSlickCodeGen extends App {
         // datetimeはデファオルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
         override def rawType = model.tpe match {
           case "java.sql.Timestamp" => "LocalDateTime"
-          case _                    =>
-            super.rawType
+          case _                    => super.rawType
         }
       }
     }
@@ -526,8 +531,7 @@ override def Column = new Column(_){
   // datetimeはデファルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
   override def rawType = model.tpe match {
     case "java.sql.Timestamp" => "LocalDateTime"
-    case _                    =>
-      super.rawType
+    case _                    => super.rawType
   }
 }
 ```
@@ -731,7 +735,8 @@ indexもちょうど10番目です。
 それぞれメリット/デメリット向いている用途などがありますが、今回は３番目の独自Profileを実装する方式で対応をしていきたいと思います。  
 
 この方法を選択する理由はシンプルに`公式推奨`だからです。  
-また私は一番理解しやすいのは1番だと考えていて、それがrookies資料としては適切なのではと悩んだのですが、全てのテーブルのモデルのmappingを書いていくのは効率が悪すぎるので、少し難しい感じはしてしまいますがProfile実装を選択しています。  
+私は一番理解しやすいのは1番だと考えていて、それがrookies資料としては適切なのではと悩みました。  
+ただ、全てのテーブルのモデルのmappingを書いていくのは効率が悪すぎるのと、公式が推奨する形が一番御行儀が良いと思うので、Profile拡張で作成をしていきたいと思います。  
 
 とはいえ、Profile拡張という言葉の持つパワーのせいで難しい気がするだけで、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応でもあります。  
 あまり難しく考えずに「既存実装コピペしてLocalDateTimeのformatterだけ直す」と思っていただければ、心理的負荷は減るのかなと思います。  
@@ -745,7 +750,9 @@ indexもちょうど10番目です。
 
 文章でいうと以下の部分ですね。  
 ```
-If you need to customise these formats, you can by extending a Profile and overriding the appropriate methods. For an example of this see: https://github.com/d6y/instant-etc/blob/master/src/main/scala/main.scala#L9-L45. Also of use will be an example of a full mapping, such as: https://github.com/slick/slick/blob/v3.3.0/slick/src/main/scala/slick/jdbc/JdbcTypesComponent.scala#L187-L365.
+If you need to customise these formats, you can by extending a Profile and overriding the appropriate methods.
+For an example of this see: https://github.com/d6y/instant-etc/blob/master/src/main/scala/main.scala#L9-L45.
+Also of use will be an example of a full mapping, such as: https://github.com/slick/slick/blob/v3.3.0/slick/src/main/scala/slick/jdbc/JdbcTypesComponent.scala#L187-L365.
 ```
 
 この公式実装はH2DBを元に書かれているので、これを参考にMySQLのコードを作っていきます。  
@@ -838,14 +845,16 @@ object MyDBProfile extends MyDBProfile
 結構なコード量に見えますが、ほとんどコピペしただけです。  
 大事な部分は以下のパース部分ですね。  
 ```
-case dateString => LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+case dateString => LocalDateTime.parse(dateString, formatter)
 ```
 
 ほとんどは元のMySQLProfileの実装をコピーして持ってきているだけです。  
 しかしLocalDateTimeのparse処理が修正されているので、このProfileを利用してSlickに設定すれば特に他には何もすることなくLocalDateTimeがモデルにマッピングできるようになります。  
 
 ちょっと話は逸れますが`.appendFraction`便利ですね。  
-自分で文字列処理するの嫌だったので、とてもありがたいです。  
+LocalDateTimeのparseはミリ秒については一律で設定する方法がなく、ミリ秒の数だけ`SSSSSS`みたいに書かないといけないのでLocalDateTime側のメソッドで処理してもらえると助かります。  
+また0-9までの指定になっているのは、MySQL側でミリ秒以下が1つでもあると0埋めして9桁で受け取ろうとするからです。  
+MySQL自体は6桁までの精度しかない(はず)です。  
 
 少し長くなりましたが日付対応はこれで完了です。  
 
@@ -859,7 +868,7 @@ case dateString => LocalDateTime.parse(dateString, DateTimeFormatter.ofPattern("
 <a id="markdown-そもそもplay-slickとは" name="そもそもplay-slickとは"></a>
 #### そもそもplay-slickとは？
 
-私自身もあまりよくわかっていなかったのですが、そもそもplay-slickとはなんなのでしょうか。  
+実は私あまりよくわかっていなかったのですが、そもそもplay-slickとはなんなのでしょうか。  
 と言うことで、公式情報を引用させていただきます。
 
 ```
@@ -910,13 +919,13 @@ with HasDatabaseConfigProvider[JdbcProfile]{ // play-slick
 この`DatabaseConfigProvider`をplay-slickが設定ファイルから組み立ててInject、その結果適切なprofileを読み取れるようになるという仕組みです。  
 
 Controllerクラス内部の`import dbConfig.profile.api._`の部分がProfileからslickの処理に必要な機能をimportしている部分になります。  
-コメントにも記載がありますが、そのままのslickだと`import slick.profile.MySQLProfile.api._`のように利用してるものに当たるものです。  
+コメントにも記載がありますが、そのままのslickだと`import slick.profile.MySQLProfile.api._`のように利用してるものにあたります。  
 
 play-slickを利用することでRDBの違いを簡単に設定ファイルに隠蔽することができますね。  
 
-では、このplay-slickを利用して実際に機能を作成していきます。  
+では、このplay-slickを利用して実際にコードを書いていきます。  
 今回はplay-slickのサンプルプロジェクトを参考に`Repository`レイヤーを作成する形で実装を行っていきます。  
-ここで紹介した`DatabaseConfigProvider`関連のDIもControllerではなくRepositoryに行っていきましょう。  
+ここで紹介した`DatabaseConfigProvider`関連のDIもControllerではなくRepositoryに対して行っていきましょう。  
 
 <a id="markdown-tweet関連のdbアクセス用クラスを作成する" name="tweet関連のdbアクセス用クラスを作成する"></a>
 #### Tweet関連のDBアクセス用クラスを作成する
@@ -1104,7 +1113,7 @@ sql"SELECT * FROM tweet".as[Tweet]
 ```
 
 このas句を理解するために必要なimplicitというわけですね。  
-これがない場合には `as[(Long, String, LocalDateTime, LocalDateTime, LocalDateTime)]`のようにタプリで指定して利用する形になります。  
+これがない場合には `as[(Long, String, LocalDateTime, LocalDateTime, LocalDateTime)]`のようにタプルで指定して利用する形になります。  
 
 なので、この実装は必ずしも必須の実装ではありません。  
 
@@ -1130,11 +1139,11 @@ def * = (id, content, postedAt, createdAt, updatedAt) <> (
 def * = (id, content, postedAt, createdAt, updatedAt) <> (TweetRow.tupled, TweetRow.unapply)
 ```
 
-ただ今回はTweetモデルのIdがOptionになっているため、Tableとモデルの情報が完全に一致しないためにマッピングを書いています。  
-insert時には通常idはないけど、selectのときにはidは必ずあるという状態になるためこのような形になるわけですね。  
+ただ今回はTweetモデルのIdがOptionになっており、Tableとモデルの情報が完全に一致しないためにマッピングを書いています。  
+insert時にはidはないけど、selectのときにはidは必ずあるという状態になるためこのような形になるわけですね。  
 
-これを上手いことやるための実装や設計は、各々でいくつか方法があると思います。  
-みなさんも慣れてきたら自分でがんばってみてください。多分楽しいので。  
+これを上手いことやるための実装や設計は、いくつか方法があると思いますが複雑になるのと思想によるところがあるので割愛します。  
+みなさんも慣れてきたら自分で作ってみると楽しいですよ。  
 
 そして最後に`def ?`です。  
 
@@ -1202,15 +1211,18 @@ slick関連の設定だけ抜粋しています。
 これによってplay-slickがこの設定を読みに行ってくれるようになります。  
 
 confの設定はこれで完了です。  
-ここまででslickに関する実装は完了です。  
+
+これでslickに関する実装は完了です！  
 
 次の章からは、これらを利用してCRUDを修正していきます。  
 
+<a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
 
 ここからはslickのマッピングの別の書き方を紹介します。  
 今回はあくまでLocalDateTimeに対しての記載になりますが、独自型やその他についてもこれらを利用して対応できます。  
 
+<a id="markdown-mappedcolumntypeを利用したマッピング" name="mappedcolumntypeを利用したマッピング"></a>
 ### MappedColumnTypeを利用したマッピング
 
 通常であればslickはこの方法で外部の型をマッピングできるようにしていきます。  
@@ -1269,7 +1281,7 @@ MappedColumnType.base[LocalDateTime, String] (
 `val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")`
 
 この場合Profileに定義されているLocalDateTimeのマッピングが先に処理されて、その後にMappedColumnTypeの処理に移ろうします。  
-なので結局はgetValueのLocalDateTime.parseの箇所で落ちてしまうわけですね。  
+なので結局はgetValueのLocalDateTime.parseの箇所で落ちてしまうんです。  
 
 かといってStringに対してのmappingにしてしまうと、普通にStringで使いたいものについても変換がかかってしまいます。  
 そのためLocalDateTimeを直接使うことができません。  
@@ -1335,6 +1347,7 @@ import slick.models.Tweet
 このようにMappedColumnTypeでの実装だと、必要になるコード量は増えるのに結局ケアもしないといけないということで手間が倍に増えてしまいました。  
 そのため今回のケースについては適切ではなさそうです。  
 
+<a id="markdown-stringのまま受け取って個別にマッピング" name="stringのまま受け取って個別にマッピング"></a>
 ### Stringのまま受け取って個別にマッピング
 
 こちらは実装の中身を理解しやすく、手間は少しかかりますがシンプルな実装だと思います。  
@@ -1407,10 +1420,4 @@ trait TupleMappedTweetTable {
 ただ、全てのモデルや全ての日付型のマッピングでコツコツ実装をしてあげないといけないのでテーブル数や日付型データを扱う数が増えると大変です。  
 
 そのため今回のケースについては、やはり好ましい実装ではなさそうです。  
-
-<a id="markdown-tips" name="tips"></a>
-## Tips
-
-- db名変更をした場合などは`docker/db/mysql_data/*`を削除してからコンテナの再起動をする
-
 
