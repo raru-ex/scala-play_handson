@@ -37,7 +37,6 @@
     - [おまけ](#おまけ)
         - [MappedColumnTypeを利用したマッピング](#mappedcolumntypeを利用したマッピング)
         - [Stringのまま受け取って個別にマッピング](#stringのまま受け取って個別にマッピング)
-    - [Tips](#tips)
 
 <!-- /TOC -->
 

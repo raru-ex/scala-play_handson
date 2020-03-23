@@ -1,6 +1,7 @@
 # READ ME
 
-Scala-Playframeworkの学習をするためのハンズオン資料です
+Scala-Playframeworkの学習をするためのハンズオン資料です。  
+各レッスンごとにhandsonフォルダが用意されているため、そのフォルダを利用して開発を進めていただけるようになっています。  
 
 ## requirements
 
