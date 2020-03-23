@@ -5,10 +5,12 @@ import play.api.mvc.ControllerComponents
 import play.api.mvc.BaseController
 import play.api.mvc.Request
 import play.api.mvc.AnyContent
-import slick.models.Tweet
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.I18nSupport
+import scala.concurrent.ExecutionContext
+import slick.models.Tweet
+import slick.repositories.TweetRepository
 
 case class TweetFormData(content: String)
 
@@ -20,7 +22,13 @@ case class TweetFormData(content: String)
   *   ActionはcontrollerComponents.actionBuilderと同じ
   */
 @Singleton
-class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with I18nSupport {
+class TweetController @Inject()(
+  val controllerComponents: ControllerComponents,
+  tweetRepository: TweetRepository
+)(implicit ec: ExecutionContext)
+extends BaseController
+with I18nSupport {
+
   // DBのMockとして利用したいので、mutableなクラスのフィールドとして定義し直す
   val tweets = scala.collection.mutable.ArrayBuffer((1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}")): _*)
 
@@ -34,13 +42,15 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 
   /**
     * Tweetを一覧表示
+    *   Action.asyncとすることでreturnの型としてFuture[Result]を受け取れるように修正
     */
-  def list() =  Action { implicit request: Request[AnyContent] =>
-    // Ok()はステータスコードが200な、Resultをreturnします。
-    // つまり正常系としてviews.html.tweet.listのコンテンツを返すということになります。
-
-    // viewの引数としてimmutableなtweetsを渡します。
-    Ok(views.html.tweet.list(tweets.toSeq))
+  def list() =  Action async { implicit request: Request[AnyContent] =>
+    // DBから値を取得してreturnするように修正
+    for {
+      results <- tweetRepository.all()
+    } yield {
+      Ok(views.html.tweet.list(results))
+    }
   }
 
   /**
