@@ -23,6 +23,20 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
     */
   def all(): Future[Seq[Tweet]] = db.run(tweet.result)
 
+  // sample
+  def allOdd(): Future[Seq[Tweet]] = db.run(
+    tweet.filter(x => x.id % 2L === 0L).result
+  )
+
+  // sample
+  def findById(id: Long): Future[Seq[Tweet]] = {
+    val db = Database.forConfig("slick.dbs.default")
+    db.run(
+      tweet.filter(x => x.id  === id).result
+    )
+  }
+
+
   // ########## [Table Mapping] ##########
   private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
 

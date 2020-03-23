@@ -24,7 +24,7 @@ case class TweetFormData(content: String)
 @Singleton
 class TweetController @Inject()(
   val controllerComponents: ControllerComponents,
-  tweetRepository: TweetRepository
+  tweetRepository:          TweetRepository
 )(implicit ec: ExecutionContext)
 extends BaseController
 with I18nSupport {
@@ -51,6 +51,7 @@ with I18nSupport {
     } yield {
       Ok(views.html.tweet.list(results))
     }
+
   }
 
   /**
