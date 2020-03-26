@@ -987,22 +987,26 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
 
   // ########## [Table Mapping] ##########
   private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
-    def * = (id, content, postedAt, createdAt, updatedAt) <> (
-      (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
-        Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
-      },
-      (tweet: Tweet) => {
-        Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
-      }
-    )
 
-    def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(postedAt), Rep.Some(createdAt), Rep.Some(updatedAt))).shaped.<>({r=>import r._; _1.map(_=> Tweet.tupled((Option(_1.get), _2.get, _3.get, _4.get, _5.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
-
+    // Tableとのカラムマッピング
     val id:        Rep[Long]          = column[Long]("id", O.AutoInc, O.PrimaryKey)
     val content:   Rep[String]        = column[String]("content", O.Length(120,varying=true))
     val postedAt:  Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
     val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")
     val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
+
+    // Plain SQLでデータ取得を行う用のマッピング
+    implicit def GetResultTweet(implicit e0: GetResult[Long], e1: GetResult[String], e2: GetResult[LocalDateTime]): GetResult[Tweet] = GetResult{
+      prs => import prs._
+      Tweet.tupled((Some(<<[Long]), <<[String], <<[LocalDateTime], <<[LocalDateTime], <<[LocalDateTime]))
+    }
+
+    // model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
+    // O.PrimaryKeyはColumnOptionTypeとなるためid.?でidをOptionとして取り扱い可能
+    def * = (id.?, content, postedAt, createdAt, updatedAt) <> (Tweet.tupled, Tweet.unapply)
+
+    def ? = ((Rep.Some(id), Rep.Some(content), Rep.Some(postedAt), Rep.Some(createdAt), Rep.Some(updatedAt))).shaped.<>({r=>import r._; _1.map(_=> Tweet.tupled((Option(_1.get), _2.get, _3.get, _4.get, _5.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
   }
 }
 ```
@@ -1047,14 +1051,8 @@ private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("t
   }
 
   // model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
-  def * = (id, content, postedAt, createdAt, updatedAt) <> (
-    (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
-      Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
-    },
-    (tweet: Tweet) => {
-      Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
-    }
-  )
+  // O.PrimaryKeyはColumnOptionTypeとなるためid.?でidをOptionとして取り扱い可能
+  def * = (id.?, content, postedAt, createdAt, updatedAt) <> (Tweet.tupled, Tweet.unapply)
 
   // Maps whole row to an option. Useful for outer joins.
   def ? = ((
@@ -1121,6 +1119,20 @@ sql"SELECT * FROM tweet".as[Tweet]
 
 ```scala
 // model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
+// O.PrimaryKeyはColumnOptionTypeとなるためid.?でidをOptionとして取り扱い可能
+def * = (id.?, content, postedAt, createdAt, updatedAt) <> (Tweet.tupled, Tweet.unapply)
+```
+
+ここに定義した内容でselect, insert, updateなどの処理をDB側に上手くマッピングしてデータの流し込みや受け取りが行われます。  
+`id.?`の部分ですが、これはPrimaryKeyに対して行える呼び出し方になります。  
+主キーはAutoIncで自動採番にしてinsert時にはプログラムから指定せず、DB側で連番を付与させることが多いですよね。  
+そのためSlickでも登録時にはOptionであることを許容して、select時には非Optionの型で処理できるように`.?`という定義の仕方を用意してくれています。  
+これを利用することでかなり定義をシンプルにかけるので、覚えておいてください。  
+
+ちなみにtupledですんなり処理できない場合には、以下のように書くことができます。  
+
+```scala
+// model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
 def * = (id, content, postedAt, createdAt, updatedAt) <> (
   (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
     Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
@@ -1131,18 +1143,7 @@ def * = (id, content, postedAt, createdAt, updatedAt) <> (
 )
 ```
 
-ここに定義した内容でselect, insert, updateなどの処理をDB側に上手くマッピングしてデータの流し込みや受け取りが行われます。  
-シンプルなものであればcodegenが生成した実装のように以下のように記述可能です。  
-
-```scala
-def * = (id, content, postedAt, createdAt, updatedAt) <> (TweetRow.tupled, TweetRow.unapply)
-```
-
-ただ今回はTweetモデルのIdがOptionになっており、Tableとモデルの情報が完全に一致しないためにマッピングを書いています。  
-insert時にはidはないけど、selectのときにはidは必ずあるという状態になるためこのような形になるわけですね。  
-
-これを上手いことやるための実装や設計は、いくつか方法があると思いますが複雑になるのと思想によるところがあるので割愛します。  
-みなさんも慣れてきたら自分で作ってみると楽しいですよ。  
+これは`id.?`を使わなかった場合の書き方の一例みたいな形ですが、やっていることはtupled, unapplyを自分で書いているということです。  
 
 そして最後に`def ?`です。  
 
@@ -1159,7 +1160,7 @@ def ? = ((
   import r._;
   _1.map( _=>
       Tweet.tupled((
-        Option(_1.get), // モデル側はidがOptionなのでOptionで包んでいる
+        Some(_1.get), // モデル側はidがOptionなのでOptionで包んでいる
         _2.get,
         _3.get,
         _4.get,

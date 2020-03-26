@@ -30,7 +30,7 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
 
   // sample
   def findById(id: Long): Future[Seq[Tweet]] = {
-    val db = Database.forConfig("slick.dbs.default")
+    val db = Database.forConfig("your_db_setting")
     db.run(
       tweet.filter(x => x.id  === id).result
     )
@@ -54,14 +54,8 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
     }
 
     // model -> db用タプル, dbからのデータ -> modelの変換を記述する処理
-    def * = (id, content, postedAt, createdAt, updatedAt) <> (
-      (x: (Long, String, LocalDateTime, LocalDateTime, LocalDateTime)) => {
-        Tweet(Some(x._1), x._2 ,x._3, x._4, x._5)
-      },
-      (tweet: Tweet) => {
-        Some((tweet.id.getOrElse(0L), tweet.content, tweet.postedAt, tweet.createdAt, tweet.updatedAt))
-      }
-    )
+    // O.PrimaryKeyはColumnOptionTypeとなるためid.?でidをOptionとして取り扱い可能
+    def * = (id.?, content, postedAt, createdAt, updatedAt) <> (Tweet.tupled, Tweet.unapply)
 
     // Maps whole row to an option. Useful for outer joins.
     def ? = ((
@@ -75,7 +69,7 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
       import r._;
       _1.map( _=>
           Tweet.tupled((
-            Option(_1.get), // モデル側はidがOptionなのでOptionで包んでいる
+            Some(_1.get), // モデル側はidがOptionなのでOptionで包んでいる
             _2.get,
             _3.get,
             _4.get,
