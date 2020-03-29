@@ -51,17 +51,20 @@ with I18nSupport {
     } yield {
       Ok(views.html.tweet.list(results))
     }
-
   }
 
   /**
     * 対象IDのTweet詳細を表示
     */
-  def show(id: Long) = Action { implicit request: Request[AnyContent] =>
+  def show(id: Long) = Action async { implicit request: Request[AnyContent] =>
     // idが存在して、値が一致する場合にfindが成立
-    tweets.find(_.id.exists(_ == id)) match {
-      case Some(tweet) => Ok(views.html.tweet.show(tweet))
-      case None        => NotFound(views.html.error.page404())
+    for {
+      tweetOpt <- tweetRepository.findById(id)
+    } yield {
+      tweetOpt match {
+        case Some(tweet) => Ok(views.html.tweet.show(tweet))
+        case None        => NotFound(views.html.error.page404())
+      }
     }
   }
 

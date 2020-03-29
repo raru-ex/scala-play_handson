@@ -3,7 +3,7 @@ package slick.repositories
 import java.time.LocalDateTime
 import play.api.db.slick.{HasDatabaseConfigProvider,DatabaseConfigProvider}
 import javax.inject.{Inject, Singleton}
-import slick.jdbc.{JdbcProfile, GetResult}
+import slick.jdbc.{JdbcProfile, GetResult
 import scala.concurrent.{Future, ExecutionContext}
 import slick.models.Tweet
 

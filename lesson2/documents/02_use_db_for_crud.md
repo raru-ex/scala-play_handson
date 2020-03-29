@@ -190,7 +190,7 @@ PlayではActionメソッドはreturnにResult型を要求しますが、これ�
 
 これは[公式ドキュメント](https://www.playframework.com/documentation/2.8.x/ScalaAsync#Actions-are-asynchronous-by-default)にもNoteとして記載されています。  
 
-```scala
+```
 Note: Both Action.apply and Action.async create Action objects that are handled internally in the same way.
 There is a single kind of Action, which is asynchronous, and not two kinds (a synchronous one and an asynchronous one).
 The .async builder is just a facility to simplify creating actions based on APIs that return a Future, which makes it easier to write non-blocking code.
@@ -226,6 +226,60 @@ Action, Action asyncの使い分けはbody内の処理がreturnする型が書�
 
 
 
+## 詳細画面の修正
+
+一覧画面ができたので、続いて詳細画面の修正を行っていきます。  
+
+### Repositoryの修正
+
+詳細ページを表示するために、対象データを1件取得する処理をRepositoryに追加していきましょう。
+
+`app/slick/repositories/TweetRepository.scala`
+```scala
+/**
+ * idを指定してTweetを取得
+ */
+def findById(id: Long): Future[Option[Tweet]] = db.run(
+  tweet.filter(x => x.id  === id).result.headOption
+)
+```
+
+sampleで作成していた処理と似ていますが、今回は主キーであるidでデータを取得するためOption型でデータを取得しています。  
+filterはSQLでいうところの`where句`にあたります。  
+単純にfilterを行うとデータがSeqとなるため、headOptionでOptionとして取得しているということです。  
+
+慣れてしまうとScalaでmutableのArrayを扱うよりも、こちらの方が余程単純です。  
 
 
+### Controllerの修正
+
+一覧の時の修正を参考に、こちらも処理を修正していきましょう。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+  /**
+    * 対象IDのTweet詳細を表示
+    */
+  def show(id: Long) = Action async { implicit request: Request[AnyContent] =>
+    // idが存在して、値が一致する場合にfindが成立
+    for {
+      tweetOpt <- tweetRepository.findById(id)
+    } yield {
+      tweetOpt match {
+        case Some(tweet) => Ok(views.html.tweet.show(tweet))
+        case None        => NotFound(views.html.error.page404())
+      }
+    }
+  }
+```
+
+今回もActionを`async`にしてfor式を利用してFutureを処理しています。  
+単純な処理であればこの形式で処理できてしまうので見やすくなりますね。  
+
+前回に引き続きViewに渡すモデルは変わっていないので、全体の修正は以上です。
+
+早速詳細ページを表示して動作を確認してみましょう。  
+[http://localhost:9000/tweet/1](http://localhost:9000/tweet/1)  
+
+正常に画面が表示されればOKです。  
 

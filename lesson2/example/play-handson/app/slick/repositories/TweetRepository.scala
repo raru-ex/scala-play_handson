@@ -7,6 +7,10 @@ import slick.jdbc.{JdbcProfile, GetResult}
 import scala.concurrent.{Future, ExecutionContext}
 import slick.models.Tweet
 
+/**
+ * TweetRepository
+ * Tweet Tableのデータに対して処理を行う
+ */
 @Singleton
 class TweetRepository @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider
@@ -23,18 +27,12 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
     */
   def all(): Future[Seq[Tweet]] = db.run(tweet.result)
 
-  // sample
-  def allOdd(): Future[Seq[Tweet]] = db.run(
-    tweet.filter(x => x.id % 2L === 0L).result
+  /**
+   * idを指定してTweetを取得
+   */
+  def findById(id: Long): Future[Option[Tweet]] = db.run(
+    tweet.filter(x => x.id  === id).result.headOption
   )
-
-  // sample
-  def findById(id: Long): Future[Seq[Tweet]] = {
-    val db = Database.forConfig("your_db_setting")
-    db.run(
-      tweet.filter(x => x.id  === id).result
-    )
-  }
 
 
   // ########## [Table Mapping] ##########
