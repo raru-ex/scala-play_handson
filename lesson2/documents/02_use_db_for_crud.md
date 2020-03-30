@@ -250,6 +250,8 @@ filterはSQLでいうところの`where句`にあたります。
 
 慣れてしまうとScalaでmutableのArrayを扱うよりも、こちらの方が余程単純です。  
 
+ちなみに基本的なクエリについては以下のページに説明がありますので、今後の参考にしてください。  
+[Slick Queries](https://scala-slick.org/doc/3.3.1/queries.html)
 
 ### Controllerの修正
 
@@ -282,4 +284,119 @@ filterはSQLでいうところの`where句`にあたります。
 [http://localhost:9000/tweet/1](http://localhost:9000/tweet/1)  
 
 正常に画面が表示されればOKです。  
+
+## 更新画面の修正
+
+詳細ページが表示できたので、引き続き更新画面の修正を行っていきます。  
+
+### Repositoryの修正
+
+今回は2つほどRepository実装のサンプルを作成してみました。  
+以下に実装を記載します。  
+
+`app/slick/repositories/TweetRepository.scala`
+```scala
+/**
+ * 対象のtweetを更新する
+ */
+def update(tweet: Tweet): Future[Option[Tweet]] = db.run {
+  val row = query.filter(_.id === tweet.id)
+  for {
+    old <- row.result.headOption
+    _    = old match {
+      case Some(_) => row.update(tweet)
+      case None    => DBIO.successful(0)
+    }
+  } yield old
+}
+
+/**
+ * 対象のTweetの内容を更新する
+ */
+def updateContent(id: Long, content: String): Future[Int] = {
+  db.run(
+    query.filter(_.id === id).map(_.content).update(content)
+  )
+}
+```
+
+`update`メソッドがモデル全体の更新で`updateContent`メソッドはcontentのみの変更です。  
+意図的に違う書き方をしていますが、updateの方も以下のように書くことが可能です。  
+
+```scala
+def update(tweet: Tweet): Future[Int] = db.run(
+  query.filter(_.id === tweet.id).update(tweet)
+)
+```
+
+こちらの方がシンプルですね。  
+
+元の`update`メソッドでは古いデータをreturnするために、やや回りくどい実装になっています。  
+これは一つのメソッドの中でいくつかの処理を連続するサンプルとして記載してみました。  
+
+ちなみにDBIO.successfulを利用すると正常系として引数に渡したデータをreturnできます。  
+何かの拍子に利用したくなることもあると思いますので、SlickにもFuture.successfulみたいなものがあるんだな、程度に頭の中に残しておいていただけると良いと思います。  
+
+### Controllerの修正
+
+Repositoryの準備ができたので、次はControllerを修正していきます。  
+
+```scala
+/**
+  * 対象のツイートを更新する
+  */
+def update(id: Long) = Action async { implicit request: Request[AnyContent] =>
+  form.bindFromRequest().fold(
+    (formWithErrors: Form[TweetFormData]) => {
+      Future.successful(BadRequest(views.html.tweet.edit(id, formWithErrors)))
+    },
+    (data: TweetFormData) => {
+      for {
+        count <- tweetRepository.updateContent(id, data.content)
+      } yield {
+        count match {
+          case 0 => NotFound(views.html.error.page404())
+          case _ => Redirect(routes.TweetController.list())
+        }
+      }
+    }
+    )
+}
+```
+
+基本的な修正内容は今までのものと同様です。  
+まずはFutureを受け取れるようにするため`Action async`にしてFuture[Result]に対応しています。  
+
+次にデータ更新の処理をslickを利用したものに修正しています。  
+
+```scala
+for {
+  count <- tweetRepository.updateContent(id, data.content)
+} yield {
+  count match {
+    case 0 => NotFound(views.html.error.page404())
+    case _ => Redirect(routes.TweetController.list())
+  }
+}
+```
+
+update処理は更新されたデータ数をIntで返すため`case 0`とそれ以外で処理を分けています。  
+データ更新が0件というのは不正なデータが対象に取られている状態なので404としています。  
+正常系は今までと同様ですね。  
+
+またもう一つ以下も修正しています。  
+
+```scala
+Future.successful(BadRequest(views.html.tweet.edit(id, formWithErrors)))
+```
+
+こちらはformにエラーがあった場合のreturnですね。  
+`Action async`になった影響で、こちらのResultをFutureで囲ってあげる必要があります。  
+そのために正常に成功したFuture型として、何もしないFutureをつくる`Future.successful`で処理をしています。  
+これでreturnの型が`Future[Result]`になります。  
+
+例によってviewの修正は不要なため、これで修正は完了です。  
+以下にアクセスして動作を確認してみてください。  
+[http://localhost:9000/tweet/1/edit](http://localhost:9000/tweet/1/edit)  
+
 

@@ -18,22 +18,45 @@ class TweetRepository @Inject()(
 extends HasDatabaseConfigProvider[JdbcProfile] {
   import profile.api._
 
-  private val tweet = new TableQuery(tag => new TweetTable(tag))
+  private val query = new TableQuery(tag => new TweetTable(tag))
 
   // ########## [DBIO Methods] ##########
 
   /**
     * tweetを全件取得
     */
-  def all(): Future[Seq[Tweet]] = db.run(tweet.result)
+  def all(): Future[Seq[Tweet]] = db.run(query.result)
 
   /**
    * idを指定してTweetを取得
    */
   def findById(id: Long): Future[Option[Tweet]] = db.run(
-    tweet.filter(x => x.id  === id).result.headOption
+    query.filter(x => x.id  === id).result.headOption
   )
 
+  /**
+   * 対象のtweetを更新する
+   */
+  def update(tweet: Tweet): Future[Int] = db.run {
+    // val row = query.filter(_.id === tweet.id)
+    // for {
+    //   old <- row.result.headOption
+    //   _    = old match {
+    //     case Some(_) => row.update(tweet)
+    //     case None    => DBIO.successful(0)
+    //   }
+    // } yield old
+    query.filter(_.id === tweet.id).update(tweet)
+  }
+
+  /**
+   * 対象のTweetの内容を更新する
+   */
+  def updateContent(id: Long, content: String): Future[Int] = {
+    db.run(
+      query.filter(_.id === id).map(_.content).update(content)
+    )
+  }
 
   // ########## [Table Mapping] ##########
   private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {

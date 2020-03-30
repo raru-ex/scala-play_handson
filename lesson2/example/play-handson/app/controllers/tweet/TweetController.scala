@@ -11,6 +11,7 @@ import play.api.i18n.I18nSupport
 import scala.concurrent.ExecutionContext
 import slick.models.Tweet
 import slick.repositories.TweetRepository
+import scala.concurrent.Future
 
 case class TweetFormData(content: String)
 
@@ -114,19 +115,20 @@ with I18nSupport {
   /**
     * 対象のツイートを更新する
     */
-  def update(id: Long) = Action { implicit request: Request[AnyContent] =>
+  def update(id: Long) = Action async { implicit request: Request[AnyContent] =>
+    // FIXME: idをurlから渡してるけどhiddenでも渡してる
     form.bindFromRequest().fold(
       (formWithErrors: Form[TweetFormData]) => {
-        BadRequest(views.html.tweet.edit(id, formWithErrors))
+        Future.successful(BadRequest(views.html.tweet.edit(id, formWithErrors)))
       },
       (data: TweetFormData) => {
-        tweets.find(_.id.exists(_ == id)) match {
-          case Some(tweet) =>
-            // indexは0からのため-1
-            tweets.update(id.toInt - 1, tweet.copy(content = data.content))
-            Redirect(routes.TweetController.list())
-          case None        =>
-            NotFound(views.html.error.page404())
+        for {
+          count <- tweetRepository.updateContent(id, data.content)
+        } yield {
+          count match {
+            case 0 => NotFound(views.html.error.page404())
+            case _ => Redirect(routes.TweetController.list())
+          }
         }
       }
       )
