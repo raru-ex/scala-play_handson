@@ -98,25 +98,28 @@ with I18nSupport {
   /**
     * 編集画面を開く
     */
-  def edit(id: Long) = Action { implicit request: Request[AnyContent] =>
-    tweets.find(_.id.exists(_ == id)) match {
-      case Some(tweet) =>
-        Ok(views.html.tweet.edit(
-          // データを識別するためのidを渡す
-          id,
-          // fillでformに値を詰める
-          form.fill(TweetFormData(tweet.content))
-        ))
-      case None        =>
-        NotFound(views.html.error.page404())
-    }
+  def edit(id: Long) = Action async { implicit request: Request[AnyContent] =>
+    for {
+      tweetOpt <- tweetRepository.findById(id)
+   } yield {
+     tweetOpt match {
+       case Some(tweet) =>
+         Ok(views.html.tweet.edit(
+           // データを識別するためのidを渡す
+           id,
+           // fillでformに値を詰める
+           form.fill(TweetFormData(tweet.content))
+         ))
+       case None        =>
+         NotFound(views.html.error.page404())
+     }
+   }
   }
 
   /**
     * 対象のツイートを更新する
     */
   def update(id: Long) = Action async { implicit request: Request[AnyContent] =>
-    // FIXME: idをurlから渡してるけどhiddenでも渡してる
     form.bindFromRequest().fold(
       (formWithErrors: Form[TweetFormData]) => {
         Future.successful(BadRequest(views.html.tweet.edit(id, formWithErrors)))

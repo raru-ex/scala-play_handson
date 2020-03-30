@@ -340,6 +340,38 @@ def update(tweet: Tweet): Future[Int] = db.run(
 ### Controllerの修正
 
 Repositoryの準備ができたので、次はControllerを修正していきます。  
+変更画面を修正するために、今回は`edit`と`update`の2つのアクションを修正します。  
+
+まず最初に`edit`アクション。  
+
+```scala
+/**
+  * 編集画面を開く
+  */
+def edit(id: Long) = Action async { implicit request: Request[AnyContent] =>
+  for {
+    tweetOpt <- tweetRepository.findById(id)
+ } yield {
+   tweetOpt match {
+     case Some(tweet) =>
+       Ok(views.html.tweet.edit(
+         // データを識別するためのidを渡す
+         id,
+         // fillでformに値を詰める
+         form.fill(TweetFormData(tweet.content))
+       ))
+     case None        =>
+       NotFound(views.html.error.page404())
+   }
+ }
+}
+```
+
+基本的な修正は今まで同様で、まずは`Action`を`Action async`に修正しています。  
+また今までtweesのArrayからデータをfindしていたものをslickの`findById`から取得するように変更しています。  
+
+編集画面の表示はこれで完了ですね。  
+続いて、実際の更新処理である`update`を修正していきましょう。  
 
 ```scala
 /**
@@ -364,10 +396,9 @@ def update(id: Long) = Action async { implicit request: Request[AnyContent] =>
 }
 ```
 
-基本的な修正内容は今までのものと同様です。  
-まずはFutureを受け取れるようにするため`Action async`にしてFuture[Result]に対応しています。  
-
-次にデータ更新の処理をslickを利用したものに修正しています。  
+こちらもFutureを受け取れるようにするため`Action async`にしてFuture[Result]に対応しています。  
+他にはデータ更新の処理をslickを利用したものに修正していますね。  
+以下の部分が該当する箇所です。  
 
 ```scala
 for {
@@ -381,7 +412,7 @@ for {
 ```
 
 update処理は更新されたデータ数をIntで返すため`case 0`とそれ以外で処理を分けています。  
-データ更新が0件というのは不正なデータが対象に取られている状態なので404としています。  
+データ更新が0件というのは、不正なデータが対象に取られている状態なので404としています。  
 正常系は今までと同様ですね。  
 
 またもう一つ以下も修正しています。  

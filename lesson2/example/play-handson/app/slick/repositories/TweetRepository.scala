@@ -37,16 +37,15 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
   /**
    * 対象のtweetを更新する
    */
-  def update(tweet: Tweet): Future[Int] = db.run {
-    // val row = query.filter(_.id === tweet.id)
-    // for {
-    //   old <- row.result.headOption
-    //   _    = old match {
-    //     case Some(_) => row.update(tweet)
-    //     case None    => DBIO.successful(0)
-    //   }
-    // } yield old
-    query.filter(_.id === tweet.id).update(tweet)
+  def update(tweet: Tweet): Future[Option[Tweet]] = db.run {
+    val row = query.filter(_.id === tweet.id)
+    for {
+      old <- row.result.headOption
+      _    = old match {
+        case Some(_) => row.update(tweet)
+        case None    => DBIO.successful(0)
+      }
+    } yield old
   }
 
   /**
