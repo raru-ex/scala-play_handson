@@ -1111,17 +1111,23 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
       '_label -> "ツイート" ,'_showConstraints -> false
     )
 
-    @* hiddenは普通に埋め込み *@
-    <input type="hidden" value="@id" name="id">
     <input type="submit" value="更新">
   }
 }
 ```
 
-input hiddenは[こちら](https://stackoverflow.com/questions/16911393/how-to-hide-a-text-field-in-play-framework)に記載されているような方法でも実現できるようですが、直感的にわかりづらいので通常のhtmlフォームを利用しています。  
-
 編集画面についてはこれで完了です。  
 一部変更はありましたが、ほとんど完了画面と同じですね。  
+
+余談ではありますが、例えば今回idなどをurlではなくhiddenで埋め込みたい場合には以下のようになります。  
+```html
+<!-- id: Longの引数を受け取る形式のパターン -->
+<input type="hidden" value="@id" name="id">
+<!-- formにidも持たせるぱた－ん -->
+<input type="hidden" value="@form.data("id")" name="id">
+```
+
+input hiddenは[こちら](https://stackoverflow.com/questions/16911393/how-to-hide-a-text-field-in-play-framework)に記載されているような方法でも実現できるようですが、直感的にわかりづらいので通常のhtmlフォームを利用するのが一般的なようです。  
 
 <a id="markdown-削除機能の作成" name="削除機能の作成"></a>
 ## 削除機能の作成
