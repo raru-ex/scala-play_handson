@@ -30,9 +30,6 @@ class TweetController @Inject()(
 extends BaseController
 with I18nSupport {
 
-  // DBのMockとして利用したいので、mutableなクラスのフィールドとして定義し直す
-  val tweets = scala.collection.mutable.ArrayBuffer((1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}")): _*)
-
   // Tweet登録用のFormオブジェクト
   val form = Form(
     // html formのnameがcontentのものを140文字以下の必須文字列に設定する
@@ -143,16 +140,17 @@ with I18nSupport {
   /**
    * 対象のデータを削除する
    */
-  def delete() = Action { implicit request: Request[AnyContent] =>
+  def delete() = Action async { implicit request: Request[AnyContent] =>
     // requestから直接値を取得するサンプル
     val idOpt = request.body.asFormUrlEncoded.get("id").headOption
-    // idがあり、値もあるときに削除
-    tweets.find(_.id.map(_.toString) == idOpt) match {
-      case Some(tweet) =>
-        tweets -= tweet
-        Redirect(routes.TweetController.list())
-      case None        =>
-        NotFound(views.html.error.page404())
+    for {
+      result <- tweetRepository.delete(idOpt.map(_.toLong))
+    } yield {
+      // 削除対象の有無によって処理を分岐
+      result match {
+        case 0 => NotFound(views.html.error.page404())
+        case _ => Redirect(routes.TweetController.list())
+      }
     }
   }
 }

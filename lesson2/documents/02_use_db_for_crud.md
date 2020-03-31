@@ -558,4 +558,87 @@ returningの説明をした後ではありますが、今回は返却されるid
 
 画面表示と登録処理まで確認できたら完了です！
 
+## 削除処理の修正
+
+最後は削除処理の修正です。  
+これでCRUDの最後の一つですね。  
+
+### Repositoryの修正
+
+例によってRepositoryを修正していきます。  
+
+`app/slick/repositories/TweetRepository.scala`
+```scala
+/**
+ * 対象のデータを削除する
+ */
+def delete(id: Long): Future[Int] = delete(Some(id))
+
+/**
+ * 対象のデータを削除する
+ */
+def delete(idOpt: Option[Long]) = db.run(
+  query.filter(_.id === idOpt).delete
+)
+```
+
+こちらが削除処理の実装になります。  
+実装自体は変更処理と似ていますね。  
+`delete`もreturnはIntになっていて、削除された件数が返されます。  
+
+だた、今回はoverloadしたメソッドも用意してみました。  
+この処理では主キーを利用してデータをfilterしているため、Option[Long]に対してfilterがかけられます。  
+それを利用してOption[Long]を受け取る`delete`メソッドをメインにしつつ、Longを直接受け取る`delete`メソッドも定義しています。  
+
+このようなことをしなくても呼び出す側で以下のように実装することもできます。  
+```scala
+idOpt.map(tweetRepository.delete)
+```
+
+ただ、せっかくLong, Option[Long]のどちらも扱えるのでそのまま渡せるようにしちゃいました。  
+少し脱線しましたが、delete処理については以上です。  
+
+### Controllerの修正
+
+作成した`delete`メソッドを利用してデータを削除できるようにしていきます。  
+
+```scala
+/**
+ * 対象のデータを削除する
+ */
+def delete() = Action async { implicit request: Request[AnyContent] =>
+  // requestから直接値を取得するサンプル
+  val idOpt = request.body.asFormUrlEncoded.get("id").headOption
+  for {
+    // stringからlongへparseできない場合があるため御行儀は悪い
+    result <- tweetRepository.delete(idOpt.map(_.toLong)) 
+  } yield {
+    // 削除対象の有無によって処理を分岐
+    result match {
+      case 0 => NotFound(views.html.error.page404())
+      case _ => Redirect(routes.TweetController.list())
+    }
+  }
+}
+```
+
+今回はOption[Long]を渡せるようにしているので、このような処理になります。  
+変更処理に似ていますね。  
+
+urlから受けとったidはstringになっているため、mapでLong型に変換をかけています。  
+本来は文字列がちゃんと数値に変換できるものなのか確認処理が必要ですが、これはurlからパラメータを取得する処理のサンプルとして記載してるので、その辺りのケアは割愛しています。  
+
+さぁ、ここまで書けたら動作を確認してみましょう。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)  
+
+削除ボタンを押してデータが削除できていればOKです。  
+
+# まとめ
+
+これで全ての処理をDBを利用した処理に修正することができました。  
+slickは最初の設定が煩雑なため、独学で利用しようとすると難しく感じることが多いかもしれません。  
+
+今はこのサンプルを利用してPlay-Slickでの開発に慣れていき、余裕が出てきたら一つ一つ読み解いていただければと思います。  
+
+
 

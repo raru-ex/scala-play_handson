@@ -65,6 +65,19 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
     )
   }
 
+  /**
+   * 対象のデータを削除する
+   */
+  def delete(id: Long): Future[Int] = delete(Some(id))
+
+  /**
+   * 対象のデータを削除する
+   */
+  def delete(idOpt: Option[Long]) = db.run(
+    query.filter(_.id === idOpt).delete
+  )
+
+
   // ########## [Table Mapping] ##########
   private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
 
