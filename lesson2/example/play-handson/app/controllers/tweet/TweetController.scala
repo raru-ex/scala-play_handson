@@ -79,21 +79,24 @@ with I18nSupport {
   /**
     * 登録処理実を行う
     */
-  def store() = Action { implicit request: Request[AnyContent] =>
-    // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
-    form.bindFromRequest().fold(
-      // 処理が失敗した場合に呼び出される関数
-      (formWithErrors: Form[TweetFormData]) => {
-        BadRequest(views.html.tweet.store(formWithErrors))
-      },
-      // 処理が成功した場合に呼び出される関数
-      (tweetFormData: TweetFormData) => {
-        tweets += Tweet(Some(tweets.size + 1L), tweetFormData.content)
-        // Redirect("/tweet/list")
-        Redirect(routes.TweetController.list())
-      }
-    )
-  }
+   def store() = Action async { implicit request: Request[AnyContent] =>
+     // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
+     form.bindFromRequest().fold(
+       // 処理が失敗した場合に呼び出される関数
+       (formWithErrors: Form[TweetFormData]) => {
+         Future.successful(BadRequest(views.html.tweet.store(formWithErrors)))
+       },
+       // 処理が成功した場合に呼び出される関数
+       (tweetFormData: TweetFormData) => {
+         for {
+           // データを登録。returnのidは不要なので捨てる
+           _ <- tweetRepository.insert(Tweet(None, tweetFormData.content))
+         } yield {
+           Redirect(routes.TweetController.list())
+         }
+       }
+     )
+   }
 
   /**
     * 編集画面を開く

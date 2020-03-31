@@ -35,6 +35,14 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
   )
 
   /**
+   * tweetを1件登録する
+   */
+  def insert(tweet: Tweet): Future[Long]= db.run(
+    // returningメソッドを利用することで、このメソッドに指定したデータを登録結果として返却するようにできる
+    (query returning query.map(_.id)) += tweet
+  )
+
+  /**
    * 対象のtweetを更新する
    */
   def update(tweet: Tweet): Future[Option[Tweet]] = db.run {

@@ -431,3 +431,131 @@ Future.successful(BadRequest(views.html.tweet.edit(id, formWithErrors)))
 [http://localhost:9000/tweet/1/edit](http://localhost:9000/tweet/1/edit)  
 
 
+
+## 登録画面の修正
+
+一覧からの流れの修正が完了したので、次は登録画面を修正していきます。  
+
+### Repositoryの修正
+
+slickでの登録機能を実装していきます。  
+
+`app/slick/repositories/TweetRepository.scala`
+```scala
+/**
+ * tweetを1件登録する
+ */
+def insert(tweet: Tweet): Future[Long]= db.run(
+  // returningメソッドを利用することで、このメソッドに指定したデータを登録結果として返却するようにできる
+  (query returning query.map(_.id)) += tweet
+)
+```
+
+登録処理の部分で見慣れないメソッドが出てきています。  
+実は登録処理は以下のように書くこともできるんです。  
+
+```scala
+/**
+ * tweetを1件登録する
+ */
+def insert(tweet: Tweet): Future[Int]= db.run(
+  query += tweet
+)
+```
+
+こちらの方が見た目はシンプルです。  
+では、この二つの何が違うと言うと、それは最終的に返される結果の値です。  
+
+最初のプログラムにも書いてありますが`returning`メソッドを利用すると、登録後に登録されたデータの一部を返却することができます。  
+今回idはDBのTable側でAutoInc設定がされているため、登録時には未確定です。  
+登録後にそのidを利用して関連テーブルにデータを登録するケースなどを考えると、実際に登録されたidが欲しくなりますよね。  
+そのため`query.map(_.id)`という形でidを返却するように`returning`に指定しているのです。
+
+スペースで区切られていると、そういう文法のように見えてしまいますが、実際には以下のようなメソッド呼び出しになっています。  
+
+```scala
+  (query.returning(query.map(_.id))).+=(tweet)
+```
+
+`query.map(_.id)`の部分はreturningの引数になっているんですね。  
+これにより、登録を行いつつ登録されたidを呼び出し側で受け取れるようになりました。  
+
+またTableの型は、以下のようにOptionではないLong型になっています。  
+
+```scala
+val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
+```
+
+今回のTweetモデルのidはOption[Long]なのですが、column定義に`O.AutoInc`が設定されていることにより登録時にidの値が無視されるようになっています。  
+これによりtweetモデルをそのまま登録処理に渡すことが可能です。  
+
+この説明は[ここ](http://scala-slick.org/doc/3.3.1/queries.html#inserting)に記載されていますが、以下に説明文を抜粋します。  
+
+```
+When you include an AutoInc column in an insert operation, it is silently ignored, so that the database can generate the proper value.
+In this case you usually want to get back the auto-generated primary key column.
+By default, += gives you a count of the number of affected rows (which will usually be 1) and ++= gives you an accumulated count in an Option (which can be None if the database system does not provide counts for all rows).
+This can be changed with the returning method where you specify the columns to be returned (as a single value or tuple from += and a Seq of such values from ++=):
+```
+
+Repositoryの実装と説明は以上になります。  
+
+### Controllerの修正
+
+引き続きコントローラの修正を行います。  
+更新処理と同じように、今回は`register`と`store`アクションををみていきましょう。  
+
+まずは`register`アクションです。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+/**
+  * 登録画面の表示用
+  */
+def register() = Action { implicit request: Request[AnyContent] =>
+  Ok(views.html.tweet.store(form))
+}
+```
+
+こちらは修正前のままの状態なのですが、特に修正は必要なさそうですね。  
+登録画面は特に画面上に必要なデータがないため、今回のDB利用のための修正の影響は受けていませんでした。  
+
+では、次は実際の登録処理である`store`です。  
+
+`app/controllers/tweet/TweetController.scala`
+```scala
+**
+ * 登録処理実を行う
+ */
+def store() = Action async { implicit request: Request[AnyContent] =>
+  // foldでデータ受け取りの成功、失敗を分岐しつつ処理が行える
+  form.bindFromRequest().fold(
+    // 処理が失敗した場合に呼び出される関数
+    (formWithErrors: Form[TweetFormData]) => {
+      Future.successful(BadRequest(views.html.tweet.store(formWithErrors)))
+    },
+    // 処理が成功した場合に呼び出される関数
+    (tweetFormData: TweetFormData) => {
+      for {
+        // データを登録。returnのidは不要なので捨てる
+        _ <- tweetRepository.insert(Tweet(None, tweetFormData.content))
+      } yield {
+        Redirect(routes.TweetController.list())
+      }
+    }
+  )
+}
+```
+
+登録処理の修正は基本的に更新処理と同様です。  
+`Action`を`Action async`として失敗時、成功時共にFutureで処理をしています。  
+登録処理もrepositoryの処理を呼び出してデータを渡していますね。  
+
+returningの説明をした後ではありますが、今回は返却されるidの値は利用しないので`_`に捨てています。  
+
+更新処理で一度行っているので、単純ではありますが修正ができたら動作をみてみましょう。  
+[http://localhost:9000/tweet/store](http://localhost:9000/tweet/store)  
+
+画面表示と登録処理まで確認できたら完了です！
+
+
