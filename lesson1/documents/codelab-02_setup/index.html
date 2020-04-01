@@ -1,0 +1,147 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>環境のセットアップ</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="codelab-02_setup"
+                  title="環境のセットアップ"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="環境のセットアップ" duration="0">
+        <p>この章ではIntelliJ IDEAとPlayのセットアップを行います。<br> 既に完了されている方はスキップしていただいて問題ありません。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="注意事項" duration="0">
+        <p>本ハンズオンは現在(2020年02月)時点で最新である、Play2.8を利用してハンズオンを進めていきます。</p>
+<p>また本ハンズオンは以下を前提として構築されています。</p>
+<ol type="1">
+<li>マシンにsbtがインストールされている</li>
+<li>Mac OSのパソコンを利用している</li>
+</ol>
+<p>前提となっている環境と差異がある方は各々読みかえていただいたり、適宜セットアップを行ってください。</p>
+<p><a href="https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Windows.html" target="_blank">sbt インストール方法 Windowsの場合</a><br><a href="https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Mac.html" target="_blank">sbt インストール方法 Macの場合</a><br><a href="https://www.scala-sbt.org/1.x/docs/ja/Installing-sbt-on-Linux.html" target="_blank">sbt インストール方法 Linuxの場合</a></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="推奨環境" duration="0">
+        <p>ハンズオンが作成されている環境がsbt1.3系を利用しているため、これを推奨します。</p>
+<ul>
+<li>1.3系のsbtが導入されている</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Playの導入" duration="0">
+        <p>早速ですがPlayの導入を行っていきます。<br> sbtのコマンドからPlayのシードプロジェクトを作成してみましょう。</p>
+<p>任意のプロジェクトディレクトリを作成して、以下のコマンドを実行してください。<br> あくまで例になりますが、以下にMacでの作業をイメージしてコマンドを記載していきます。</p>
+<pre><code># 参照: https://www.playframework.com/documentation/2.8.x/NewApplication
+$ cd ~/Documents/workspace/
+$ sbt new playframework/play-scala-seed.g8
+# ... 省略
+
+This template generates a Play Scala project
+
+name [play-scala-seed]: play-handson
+organization [com.example]: com.example
+</code></pre>
+<p>name部分でプロジェクト名を指定しています。<br> organizationは個人のドメインをお持ちの方は、その逆順で記載しても良いです。<br> 今回はサンプルのためデフォルトのままの <code>com.example</code>を指定しています。</p>
+<p>これでコマンドを実行したフォルダ以下に<code>name</code>で指定したプロジェクト名のフォルダが作成されます。</p>
+<pre><code>$ tree  -L 2 | pbcopy
+.
+└── play-handson
+    ├── app
+    ├── build.sbt
+    ├── conf
+    ├── project
+    ├── public
+    ├── target
+    └── test
+</code></pre>
+<p><code>sbt new</code>が完了したら、ローカルでサーバを起動して動作を確認してみましょう。</p>
+<pre><code>$ cd {your_project_root}
+$ sbt run
+
+# .... 以下の表示がでたらサーバが起動しています。
+# --- (Running the application, auto-reloading is enabled) ---
+# 
+# [info] p.c.s.AkkaHttpServer - Listening for HTTP on /0:0:0:0:0:0:0:0:9000
+# 
+# (Server started, use Enter to stop and go back to the console...)
+</code></pre>
+<p>サーバが起動したら、ブラウザからアクセスをしてみましょう。<br><a href="http://localhost:9000" target="_blank">http://localhost:9000</a></p>
+<p>以下の画面が表示されていればOKです。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/90d87c3399aa3323.png"></p>
+<p>導入自体はこれで完了になります。<br> 簡単で良いですね。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="統合開発環境(IntelliJ IDEA)のセットアップ" duration="0">
+        <p>今回はIntelliJ IDEA 無償版のセットアップの手順を記載していきます。</p>
+<p>Visual Studio Code + Metalsについては、いつの日にか手順を作ってみたいと思っております。<br> 今回は作っておりません。</p>
+<h2 is-upgraded>IDEAのダウンロード</h2>
+<p><a href="https://www.jetbrains.com/ja-jp/idea/" target="_blank">こちらのサイト</a>からIDEAのダウンロードリンクを押下してください。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/4b98bb8566eaabe9.png"></p>
+<p>各々OSに合わせたダウンロードページへ遷移します。(たぶん)<br> ダウンロードページに遷移したら、以下のボタンから無償版のIDEAをダウンロードします。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/afbbebe0e985fdbc.png"></p>
+<p>IDEAをインストールできたら、IDEAを起動して次のステップへ進んでください。</p>
+<h2 is-upgraded>IDEAへのプロジェクトの取り込み</h2>
+<p>まず、IDEAを起動したら<code>Open</code>からプロジェクトを開いていきましょう。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/a722a730773b3862.png"></p>
+<p>ファインダーから選択するときには、対象のプロジェクトを反転させてから<code>Open</code>で問題ありません。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/a575a71edc75e429.png"></p>
+<p>次にIDEAのテーマを選択します。<br> ここはお好みのテーマを選択してください。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/a84f73b5906a930.png"></p>
+<p>次のステップでは<code>shell</code>からIDEAを起動するためにPATHを通すか選択する画面になります。<br> ここもご自身で自由に設定いただいて問題ありません。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/6a67beebb2630ebf.png"></p>
+<p>次は好みの設定があるようでしたら変更いただいても問題ありませんが、基本的にはそのままで大丈夫です。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/8b9f27a9948fd341.png"></p>
+<p>この画面では印がしていあるように、Scalaのインストールだけは必須で行ってください。<br> 他のものについては任意です。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/e54fc2f8621f685e.png"></p>
+<p>これでIDEAが起動して、プロジェクトが読み込まれます。<br> またそのときに下の画像のようなポップアップが表示されたら<code>Import Changes</code>を選択しましょう。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/2a16cc54121a137a.png"></p>
+<p>sbtに変更が加わったときなどに表示されます。これをしないとsbt関連の変更が適用されないのでご注意ください。</p>
+<p><code>Enable Auto-Import</code>をすると自動で設定を更新するようになりますが、sbtの読み込みはマシンパワーを使うことがあるので私は手動が好きです。<br> ただこれはお好みで選んでいただいて構いません。</p>
+<p>では、起動が完了したら試しに<code>app/controllers/HomeController.scala</code>のファイルを開いてみましょう。</p>
+<p class="image-container"><img style="width: 450.00px" src="img/4d002698f5ff64ea.png"></p>
+<p>ソースコード上で、21行目の<code>Action</code>に<code>Cmd</code>キーを押しながらカーソルを移動してみてください。<br> マウスが当たったときにカーソルが指マークに変わるとおもいます。<br> そこでクリックをしてみましょう。<br> Actionの実装に飛ぶことができれば設定は正常にされている状態になっています。</p>
+<p>うまく動作しないときはJDKのインストールとScalaの設定ができていないときがあります。<br> そのときは声をかけてください。</p>
+<p>これでIDEAの設定は完了になります。</p>
+<p><a href="https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/01_introduction.md" target="_blank">&lt; 導入へ戻る</a><br><a href="https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/03_handson.md" target="_blank">ハンズオンへ進む &gt;</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+
+</body>
+</html>

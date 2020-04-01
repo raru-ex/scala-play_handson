@@ -1,20 +1,7 @@
-<a id="markdown-目次" name="目次"></a>
-# 目次
+id: codelab-01_introduction
 
-<!-- TOC -->
-
-- [目次](#目次)
-- [はじめに](#はじめに)
-- [基本情報](#基本情報)
-    - [sbtとは](#sbtとは)
-    - [Playframeworkとは](#playframeworkとは)
-        - [他のScala WEB Framework](#他のscala-web-framework)
-    - [オススメの開発エディタ](#オススメの開発エディタ)
-
-<!-- /TOC -->
-
-<a id="markdown-はじめに" name="はじめに"></a>
 # はじめに
+## はじめに
 
 Lesson1ではPlayを利用して、簡単なCRUDを作成していきます。  
 DB接続やその他周辺技術を利用すると複雑度が増してしまうため、この章ではDBは利用せずに機能を実装していきます。  
@@ -23,11 +10,9 @@ DB接続やその他周辺技術を利用すると複雑度が増してしまう
 またScala-Playで開発を行うにあたり、必要となる基本的な知識・言葉についても非常に簡単にではありますが補足させていただきます。  
 既にご存知の内容であれば、基本情報のブロックはスキップしていただいて問題ございません。  
 
-<a id="markdown-基本情報" name="基本情報"></a>
-# 基本情報
+## 基本情報
 
-<a id="markdown-sbtとは" name="sbtとは"></a>
-## sbtとは
+### sbtとは
 
 主にScalaで利用されているビルドツールです。  
 設定ファイルの記述はScalaのDSLを用いて行います。  
@@ -39,8 +24,7 @@ scalacコマンドなどを利用してscalaプログラムの実行を行うこ
 
 参照: [Wikipedia](https://ja.wikipedia.org/wiki/Sbt)
 
-<a id="markdown-playframeworkとは" name="playframeworkとは"></a>
-## Playframeworkとは
+### Playframeworkとは
 
 元々はJava向けのWebフレームワークです。  
 2010年11月にリリースされたPlay 1.1からはScalaをサポートしており、現在広く利用されているフレームワークの一つです。  
@@ -53,8 +37,7 @@ ScalaでのWeb開発では利用率が高く、参考情報も豊富なため今
 [Play Framework](https://ja.wikipedia.org/wiki/Play_Framework)  
 [JetBrains: どのフレームワーク / ライブラリをウェブ開発に定期的に使用していますか？](https://www.jetbrains.com/ja-jp/lp/devecosystem-2019/scala/)  
 
-<a id="markdown-他のscala-web-framework" name="他のscala-web-framework"></a>
-### 他のScala WEB Framework
+#### 他のScala WEB Framework
 
 その他の主要なフレームワークについても一部ご紹介しておきます。  
 
@@ -72,8 +55,7 @@ ScalaでのWeb開発では利用率が高く、参考情報も豊富なため今
   - Actor modelを採用している -> [Wikipedia](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%82%AF%E3%82%BF%E3%83%BC%E3%83%A2%E3%83%87%E3%83%AB)
 
 
-<a id="markdown-オススメの開発エディタ" name="オススメの開発エディタ"></a>
-## オススメの開発エディタ
+### オススメの開発エディタ
 
 - IntelliJ IDEA
 - Visual Studio Code & metals
