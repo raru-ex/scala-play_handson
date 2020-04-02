@@ -4,6 +4,8 @@
 outputDir=./codelabs
 # ビルド用の一時ファイルの格納フォルダ
 tmpDir=./tmp
+# 対象外ファイル
+ignoreFile=README.md
 
 build() {
   if [ ! -e $outputDir ]; then 
@@ -15,7 +17,12 @@ build() {
   fi
 
   # mdファイルを全てマージ
-  cat $1/*.md > $tmpDir/mergedMd.md
+  for file in $1/*.md; do
+    if [ $ignoreFile != ${file##*/} ]; then
+      cat $file >> $tmpDir/mergedMd.md
+    fi
+  done
+
   # 画像をコピー
   cp -pr $1/images $tmpDir/
   # htmlを生成

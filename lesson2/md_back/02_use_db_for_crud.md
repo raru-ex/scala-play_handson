@@ -1,6 +1,22 @@
-## 一覧表示画面の修正
+<a id="markdown-目次" name="目次"></a>
+# 目次
+
+<!-- TOC -->
+
+- [目次](#目次)
+- [Lesson2 slickを利用したCRUDの実装](#lesson2-slickを利用したcrudの実装)
+    - [一覧表示画面の修正](#一覧表示画面の修正)
+
+<!-- /TOC -->
+
+<a id="markdown-lesson2-slickを利用したcrudの実装" name="lesson2-slickを利用したcrudの実装"></a>
+# Lesson2 slickを利用したCRUDの実装
 
 この章ではArrayで実装されていたCRUDをDBを利用した形に修正していきます。  
+
+<a id="markdown-一覧表示画面の修正" name="一覧表示画面の修正"></a>
+## 一覧表示画面の修正
+
 まず一覧画面から修正していきます。  
 ここでは前章で作成したRepositoryを利用して一覧画面が表示できるようにしていきます。  
 
@@ -163,7 +179,7 @@ PlayではActionメソッドはreturnにResult型を要求しますが、これ�
 
 以下のように５件のデータが表示できていればOKです。  
 
-<img src="images/06_list_page.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/06_list_page.png" width="450">
 
 #### [補足] ActionとAction asyncの違い
 
@@ -617,7 +633,7 @@ urlから受けとったidはstringになっているため、mapでLong型に�
 
 削除ボタンを押してデータが削除できていればOKです。  
 
-## まとめ
+# まとめ
 
 これで全ての処理をDBを利用した処理に修正することができました。  
 slickは最初の設定が煩雑なため、独学で利用しようとすると難しく感じることが多いかもしれません。  

@@ -1,5 +1,5 @@
-summary: Play Framework Handson Introduction
-id: play-handson-part1
+summary: Play Framework Handson Lesson1
+id: play-handson-lesson1
 enviroments: web
 status: Draft
 feedback link: https://github.com/Christina-Inching-Triceps/scala-play_handson/issues
