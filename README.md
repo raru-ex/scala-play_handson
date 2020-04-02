@@ -40,6 +40,15 @@ Scala-Playframeworkの学習をするためのハンズオン資料です。
 - handson
   - handson folder.
 
+## build
+
+build documents  
+
+```sh
+$ ./bin/build_codelab_src.sh lesson1/documents
+$ ./bin/build_codelab_src.sh lesson2/documents
+```
+
 ## License
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/"><img alt="クリエイティブ・コモンズ・ライセンス" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" /></a><br />この 作品 は <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/">クリエイティブ・コモンズ 表示 - 非営利 - 継承 3.0 非移植 ライセンス</a>の下に提供されています。

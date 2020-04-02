@@ -1,24 +1,31 @@
-summary: Play Framework Handson Lesson2
-id: play-handson-lesson2
-enviroments: web
-status: Draft
-feedback link: https://github.com/Christina-Inching-Triceps/scala-play_handson/issues
-tags: scala,Play Framework
-authors: chiristina.inching.triceps
+<a id="markdown-目次" name="目次"></a>
+# 目次
 
-# Play Framewworkハンズオン 2章
+<!-- TOC -->
 
-2章では1章で作成したコンテンツを元にデータベースを利用したプログラムへ修正をしていきます。  
-データベースを利用するにあたって、環境を汚してしまわないようにDockerを利用することを前提にしています。  
+- [目次](#目次)
+- [Lesson2 Dockerセットアップ](#lesson2-dockerセットアップ)
+    - [Lesson1のプロジェクトのコピー](#lesson1のプロジェクトのコピー)
+    - [Dockerのインストール](#dockerのインストール)
+    - [DockerでPlay-Scalaの実行環境をセットアップ](#dockerでplay-scalaの実行環境をセットアップ)
+    - [DockerでDBのセットアップ](#dockerでdbのセットアップ)
+        - [Dockerfileの設定](#dockerfileの設定)
+        - [my.cnfを配置](#mycnfを配置)
+        - [docker-composeにDBの設定を追記](#docker-composeにdbの設定を追記)
+    - [Tips](#tips)
 
-## Docker環境のセットアップ
+<!-- /TOC -->
+
+<a id="markdown-lesson2-dockerセットアップ" name="lesson2-dockerセットアップ"></a>
+# Lesson2 Dockerセットアップ
 
 ハンズオンで開発を行うための環境をセットアップします。  
 Dockerを利用して環境を作成しているため、手順兼説明資料として本章を残します。  
-ハンズオン用のプロジェクトにはDocker設定が完了している状態のものを配置しているので、この章は必ずしもご自身で対応していただく必要はありません。  
+ハンズオン用のプロジェクトにはDocker設定が完了している状態のものを配置しているので、この章はご自身で対応していただく必要はありません。  
 今後自身でプロジェクトを作成する際や、ハンズオン用プロジェクトの構成が気になる人は参考にしていただければと思います。  
 
-### Lesson1のプロジェクトのコピー
+<a id="markdown-lesson1のプロジェクトのコピー" name="lesson1のプロジェクトのコピー"></a>
+## Lesson1のプロジェクトのコピー
 
 まずはLesson1で作成したプロジェクトをコピーします。  
 これはコンソールからでもFinderからでも構いません。  
@@ -31,14 +38,16 @@ $ cp -rp lesson1/example/play-handson lesson2/handson/
 $ cd lesson2/handson/play-handson
 ```
 
-### Dockerのインストール
+<a id="markdown-dockerのインストール" name="dockerのインストール"></a>
+## Dockerのインストール
 
 環境はDockerを利用してセットアップを行うため、Dockerがインストールされていない場合にはDockerのインストールを行ってください。  
 
 Windows: [Download](https://docs.docker.com/docker-for-windows/install/)  
 Mac:     [Download](https://docs.docker.com/docker-for-mac/install/)  
 
-### DockerでPlay-Scalaの実行環境をセットアップ
+<a id="markdown-dockerでplay-scalaの実行環境をセットアップ" name="dockerでplay-scalaの実行環境をセットアップ"></a>
+## DockerでPlay-Scalaの実行環境をセットアップ
 
 project_root直下にdocker-compose.yamlファイルを作成  
 以下の内容をdocker-composeファイルに貼り付け  
@@ -124,9 +133,10 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 [http://localhost:9000](http://localhost:9000)  
 
 以下の画面が表示されれば起動は成功です。  
-<img src="images/01_docker_play_init.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/01_docker_play_init.png" width="450">
 
-### DockerでDBのセットアップ
+<a id="markdown-dockerでdbのセットアップ" name="dockerでdbのセットアップ"></a>
+## DockerでDBのセットアップ
 
 MySQLを利用するDBのdocker-compose設定を行なっていきます。  
 `project_root` 直下に以下のようにディレクトリ/ファイルを作成してください。  
@@ -142,7 +152,8 @@ docker
     └── mysql_data/
 ```
 
-#### Dockerfileの設定
+<a id="markdown-dockerfileの設定" name="dockerfileの設定"></a>
+### Dockerfileの設定
 
 `doker/db/Dockerfile` を編集していきます。  
 以下のようにファイルに記載してください。  
@@ -164,7 +175,8 @@ ENV LC_ALL ja_JP.UTF-8
 COPY ./my.cnf /etc/mysql/conf.d/my.cnf
 ```
 
-#### my.cnfを配置
+<a id="markdown-mycnfを配置" name="mycnfを配置"></a>
+### my.cnfを配置
 
 先ほどのtreeの設定と同様の箇所にmy.cnfファイルを配置します。  
 以下のようにファイルに記載してください。  
@@ -183,7 +195,8 @@ default-character-set=utf8mb4
 default-character-set=utf8mb4
 ```
 
-#### docker-composeにDBの設定を追記
+<a id="markdown-docker-composeにdbの設定を追記" name="docker-composeにdbの設定を追記"></a>
+### docker-composeにDBの設定を追記
 
 `docker-compose.yaml` にDBのService設定を追加します。  
 以下の設定をファイルに追加してください。  
@@ -282,8 +295,7 @@ mysql>
 このようにmysqlにアクセスができていれば成功です。  
 
 
-### Tips
+<a id="markdown-tips" name="tips"></a>
+## Tips
 
 - db名変更をした場合などは`docker/db/mysql_data/*`を削除してからコンテナの再起動をする
-
-

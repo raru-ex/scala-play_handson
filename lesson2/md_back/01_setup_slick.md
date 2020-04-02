@@ -1,7 +1,56 @@
+<a id="markdown-目次" name="目次"></a>
+# 目次
+
+<!-- TOC -->
+
+- [目次](#目次)
+- [Lesson2 Slickセットアップ](#lesson2-slickセットアップ)
+    - [PlayframeworkにDB接続関連の設定を追加](#playframeworkにdb接続関連の設定を追加)
+        - [build.sbtに依存関係を追加](#buildsbtに依存関係を追加)
+        - [slick-evolutionsの設定](#slick-evolutionsの設定)
+            - [DBへ接続するためにconfを設定](#dbへ接続するためにconfを設定)
+                - [設定の補足](#設定の補足)
+            - [Migration用のsqlを作成](#migration用のsqlを作成)
+            - [evolutionsを実行](#evolutionsを実行)
+        - [slick-codegenでslickのモデルを作成](#slick-codegenでslickのモデルを作成)
+            - [sbt taskの作成](#sbt-taskの作成)
+            - [SlickCodeGenの実行ファイルを作成する](#slickcodegenの実行ファイルを作成する)
+                - [TypesafeConfig導入の補足](#typesafeconfig導入の補足)
+            - [SlickCodeGen Taskの実行](#slickcodegen-taskの実行)
+        - [slick-codegenの日付型Mappingの変更](#slick-codegenの日付型mappingの変更)
+            - [evolutionsのsqlに日付データを追加](#evolutionsのsqlに日付データを追加)
+            - [SlickCodeGenのプログラム修正](#slickcodegenのプログラム修正)
+                - [Codegenで自動生成される日付型の型を変更](#codegenで自動生成される日付型の型を変更)
+                - [おまけの部分](#おまけの部分)
+            - [slick-codegenの実行と出力ファイル確認](#slick-codegenの実行と出力ファイル確認)
+    - [slickのモデルを実装](#slickのモデルを実装)
+        - [Slick3.3とMySQLを組み合わせた場合の日付型対応](#slick33とmysqlを組み合わせた場合の日付型対応)
+            - [日付関連のRDBごと比較](#日付関連のrdbごと比較)
+        - [未対応の場合のエラーと原因](#未対応の場合のエラーと原因)
+        - [LocalDateTimeのparseエラー対応方針決め](#localdatetimeのparseエラー対応方針決め)
+        - [独自Profile実装](#独自profile実装)
+        - [play-slickを利用してモデルの操作を行う](#play-slickを利用してモデルの操作を行う)
+            - [そもそもplay-slickとは？](#そもそもplay-slickとは)
+            - [play-slickのコード上の機能](#play-slickのコード上の機能)
+            - [Tweet関連のDBアクセス用クラスを作成する](#tweet関連のdbアクセス用クラスを作成する)
+            - [独自実装したprofileを利用するように設定する](#独自実装したprofileを利用するように設定する)
+    - [おまけ](#おまけ)
+        - [MappedColumnTypeを利用したマッピング](#mappedcolumntypeを利用したマッピング)
+        - [Stringのまま受け取って個別にマッピング](#stringのまま受け取って個別にマッピング)
+
+<!-- /TOC -->
+
+<a id="markdown-lesson2-slickセットアップ" name="lesson2-slickセットアップ"></a>
+# Lesson2 Slickセットアップ
+
+ハンズオンでDB接続を行うためにDB操作ライブラリのSlick関連の設定を行っていきます。  
+一部複雑な箇所もあるのでハンズオンとして対応せずに、この実装がインクルードされた状態のシードを利用して実装を進めていただいても大丈夫です。  
+その場合にも一応何をしているのかを把握していただいた方が良いとは思うので、サッと目を通してもらえると幸いです。  
+
+<a id="markdown-playframeworkにdb接続関連の設定を追加" name="playframeworkにdb接続関連の設定を追加"></a>
 ## PlayframeworkにDB接続関連の設定を追加
 
-ここからPlayのプロジェクトにDB接続用のライブラリであるSlickをセットアップしていきます。  
-
+<a id="markdown-buildsbtに依存関係を追加" name="buildsbtに依存関係を追加"></a>
 ### build.sbtに依存関係を追加
 
 今回はplay-slickやslick-codegenを利用して環境を作成していきます。  
@@ -60,7 +109,8 @@ $ docker-compose exec play-scala bash
 
 今回追加したライブラリのダウンロードが始まれば設定はOKです。  
 
-## slick-evolutionsの設定
+<a id="markdown-slick-evolutionsの設定" name="slick-evolutionsの設定"></a>
+### slick-evolutionsの設定
 
 早速ですが追加したライブラリを使っていきます。  
 
@@ -70,7 +120,8 @@ Slickのツールにはslick-evolutionsというDBマイグレーションツー
 evolutions以外ではFlywayというものも広く利用されています。  
 もしかしたらFlywayのほうがよく使われているかもしれません。  
 
-### DBへ接続するためにconfを設定
+<a id="markdown-dbへ接続するためにconfを設定" name="dbへ接続するためにconfを設定"></a>
+#### DBへ接続するためにconfを設定
 
 slick-evolutionsは名前の通りSlickを経由してDBへの接続を行います。  
 そのためまずはslickがDBへ接続できるように設定をしてあげる必要があります。  
@@ -96,7 +147,8 @@ slick.dbs {
 }
 ```
 
-#### 設定の補足
+<a id="markdown-設定の補足" name="設定の補足"></a>
+##### 設定の補足
 
 先ほど追加した設定を簡単に説明します。  
 
@@ -107,7 +159,8 @@ slickのデフォルトでの参照設定は`slick.dbs.{db_name}.db` という�
 `url`の中で`db:3306`という箇所がありますが、この`db`はネットワーク上でのhost名になります。  
 `docker-compose.yaml`でDB側のコンテナのコンテナ名を`db`としているので、そのコンテナ名で対象のサーバへアクセスをしています。
 
-### Migration用のsqlを作成
+<a id="markdown-migration用のsqlを作成" name="migration用のsqlを作成"></a>
+#### Migration用のsqlを作成
 
 DB接続の設定ができたので、次はDBに対して実行するSQLを用意します。  
 evolutionsではデフォルトで`conf/evolutions/{db_name}/{連番}.sql`というファイルを検索しにいくので、以下のような構造でフォルダ/ファイルを作成してください。  
@@ -140,7 +193,8 @@ DROP TABLE tweet;
 slickで日付周りの設定をするのが少し面倒なので、ここでは一旦timestampの設定をコメントアウトしています。  
 最終的には設定していくのでご安心ください。  
 
-### evolutionsを実行
+<a id="markdown-evolutionsを実行" name="evolutionsを実行"></a>
+#### evolutionsを実行
 
 準備が完了したので、実際にマイグレーションを実行してみます。  
 evolutionsはブラウザからマイグレーションを実行する作りになっているため、コンテナへアクセスし、サーバを起動してください。
@@ -154,7 +208,7 @@ $ docker-compose exec play-scala bash
 
 そうすると以下の画面が表示されると思います。  
   
-<img src="images/02_evolutions_execute.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/02_evolutions_execute.png" width="450">
 
 この画面の`Apply this script now!`ボタンから、evolutionsの実行を許可してマイグレーションを走らせることができます。  
 実際にボタンを押して実行をしてみたら、mysql側のコンテナへアクセスして動作を確認してみましょう。  
@@ -177,13 +231,15 @@ mysql> show tables;
 一緒に作成されている`play_evolutions`テーブルは、evolutions側でマイグレーションの実行状況を管理するためのテーブルになります。  
 特に気にしなくて大丈夫です。  
 
-## slick-codegenでslickのモデルを作成
+<a id="markdown-slick-codegenでslickのモデルを作成" name="slick-codegenでslickのモデルを作成"></a>
+### slick-codegenでslickのモデルを作成
 
 slick-codegenというのはDBのtable情報からslickで利用するモデルを自動生成してくれるライブラリです。  
 codegeはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
 今回はsbt taskとして登録して手動実行できるように設定してきますが、sbtについては詳しく知らないため、設定方法のみ記述し詳細については割愛させていただきます。  
 
-### sbt taskの作成
+<a id="markdown-sbt-taskの作成" name="sbt-taskの作成"></a>
+#### sbt taskの作成
 
 まずは以下のコードを`build.sbt`へ追加します。  
 
@@ -202,7 +258,8 @@ sbtでは`:=`を演算子を利用してKeyに対しての実態を定義して�
 
 また`toTask()`に渡すときに、先頭にスペースを追加していますが、これがないと正常にファイルの呼び出しが行えませんので注意してください。  
 
-### SlickCodeGenの実行ファイルを作成する
+<a id="markdown-slickcodegenの実行ファイルを作成する" name="slickcodegenの実行ファイルを作成する"></a>
+#### SlickCodeGenの実行ファイルを作成する
 
 それでは早速SlickCodeGenの実行ファイルを作成していきます。  
 今回は以下のファイルの追加/変更を行っていきます。  
@@ -282,11 +339,13 @@ application {
 
 slick部分の構造が少し変更されているので気をつけてください。  
 
-#### TypesafeConfig導入の補足
+<a id="markdown-typesafeconfig導入の補足" name="typesafeconfig導入の補足"></a>
+##### TypesafeConfig導入の補足
 
 通常のplayではconfigはControllerへのDIから利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
 
-### SlickCodeGen Taskの実行
+<a id="markdown-slickcodegen-taskの実行" name="slickcodegen-taskの実行"></a>
+#### SlickCodeGen Taskの実行
 
 ファイルの修正ができたら、早速コマンドの実行をしてみましょう。  
 
@@ -328,12 +387,14 @@ output
 `Slick`は詳細を理解しようとすると大変なのでここでは詳細は省きますが、これでSlickからTweetテーブルを操作するために必要なコードが用意できました。  
 このファイルを自力で実装するのはミスも発生して大変なので、特に慣れないうちはcodegenから生成するのが良いと思います。  
 
-## slick-codegenの日付型Mappingの変更
+<a id="markdown-slick-codegenの日付型mappingの変更" name="slick-codegenの日付型mappingの変更"></a>
+### slick-codegenの日付型Mappingの変更
 
 slick-codegenではTimestampやDatetimeを`java.sql.Timestamp`にMappingしています。  
 このままだと使いづらいので`java.time.LocalDateTime`でモデル生成が行われるようにcodegenの設定を変更していきます。  
 
-### evolutionsのsqlに日付データを追加
+<a id="markdown-evolutionsのsqlに日付データを追加" name="evolutionsのsqlに日付データを追加"></a>
+#### evolutionsのsqlに日付データを追加
 
 まずは`conf/evolutions/default/1.sql`を修正してきます。  
 日付関連のデータを持っていなかったので、よくある日付型カラムを追加していきましょう。  
@@ -366,7 +427,8 @@ DROP TABLE tweet;
 
 ここで変更したものは、改めて`sbt run`で起動したサーバにアクセスを行えば、最初と同じようにブラウザから実行が可能です。  
 
-### SlickCodeGenのプログラム修正
+<a id="markdown-slickcodegenのプログラム修正" name="slickcodegenのプログラム修正"></a>
+#### SlickCodeGenのプログラム修正
 
 今度はSQLに合わせて、SlickCodeGen関連のファイルを修正していきます。  
 今回修正するファイルは以下
@@ -458,7 +520,8 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCod
 今回の修正はやや複雑になっていますね。  
 いろいろと実装が入っていますが、注目すべきポイントは1点とおまけ1つです。
 
-#### Codegenで自動生成される日付型の型を変更
+<a id="markdown-codegenで自動生成される日付型の型を変更" name="codegenで自動生成される日付型の型を変更"></a>
+##### Codegenで自動生成される日付型の型を変更
 
 本セクションでの目的である日付型の変換をしている部分はここです。  
 
@@ -487,7 +550,8 @@ override def code = "import java.time.{LocalDateTime}" + "\n" + super.code
 
 これは最終的な出力コードの先頭にimportを追加しているような動きになります。  
 
-#### おまけの部分
+<a id="markdown-おまけの部分" name="おまけの部分"></a>
+##### おまけの部分
 
 これはおまけなので、説明は省略しますが以下の部分でevolutions用のテーブルをモデル作成対象から外しています。  
 
@@ -503,7 +567,8 @@ val codegenTargetTables = MySQLProfile.createModel(Some(
 
 これでevolutionsが対象から外れて、少し見やすくなりましたね。  
 
-### slick-codegenの実行と出力ファイル確認
+<a id="markdown-slick-codegenの実行と出力ファイル確認" name="slick-codegenの実行と出力ファイル確認"></a>
+#### slick-codegenの実行と出力ファイル確認
 
 設定ができたので、改めてslick-codegenを実行してみましょう。  
 
@@ -530,12 +595,14 @@ val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ちゃんとLocalDateTimeになっていますね。  
 長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。
 
+<a id="markdown-slickのモデルを実装" name="slickのモデルを実装"></a>
 ## slickのモデルを実装
 
 基本的なslickの設定が完了したので、evolutionsで作成されたモデルなどを利用しながら実際のシステムで利用するモデルを作成してきます。  
 実装方法が何種類かあるのですが、利用してるRDBに応じて少し対応方法が変わります。  
 今回はMySQLを利用しているのでそれ前提で記載していきます。  
 
+<a id="markdown-slick33とmysqlを組み合わせた場合の日付型対応" name="slick33とmysqlを組み合わせた場合の日付型対応"></a>
 ### Slick3.3とMySQLを組み合わせた場合の日付型対応
 
 SlickはRDBごとに日付関連を扱うときに利用する型が違っています。  
@@ -544,6 +611,7 @@ SlickはRDBごとに日付関連を扱うときに利用する型が違ってい
 対応方法は何種類かあるのですが、今回はそのうち採用していく方法の実装のみ行います。  
 おまけ部分で他の実装方法についても紹介しますので、気になる方はおまけをご覧ください。  
 
+<a id="markdown-日付関連のrdbごと比較" name="日付関連のrdbごと比較"></a>
 #### 日付関連のRDBごと比較
 
 RDBごとに違うとありましたが、実際に確認してみます。  
@@ -551,17 +619,18 @@ RDBごとに違うとありましたが、実際に確認してみます。
 [https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)
 
 [MySQLの場合]  
-<img src="images/03_profile_mysql.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/03_profile_mysql.png" width="450">
 
 [Postgresの場合]  
-<img src="images/04_profile_postgres.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/04_profile_postgres.png" width="450">
 
 [Oracleの場合]
-<img src="images/05_profile_oracle.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson2/documents/images/05_profile_oracle.png" width="450">
 
 このようにそれぞれ日付型の型に割り当てられたSQL Typeに差があります。  
 細かいことは不明ですが厳密にやろうとするとMySQLが日付関連のデータの持ち方に振れ幅が大きくてparserが統一できなかったのかもしれないですね。 (わかりませんが)  
 
+<a id="markdown-未対応の場合のエラーと原因" name="未対応の場合のエラーと原因"></a>
 ### 未対応の場合のエラーと原因
 
 特に何も対応せずに今のままの状態で実装を進めるとDBアクセスを行なったタイミングで以下のようなエラーになります。  
@@ -652,6 +721,7 @@ indexもちょうど10番目です。
 
 エラーの内容と原因がわかったので、次はこれを解決していきましょう。  
 
+<a id="markdown-localdatetimeのparseエラー対応方針決め" name="localdatetimeのparseエラー対応方針決め"></a>
 ### LocalDateTimeのparseエラー対応方針決め
 
 ここで対応方針を決める必要があります。  
@@ -670,6 +740,7 @@ indexもちょうど10番目です。
 とはいえ、Profile拡張という言葉の持つパワーのせいで難しい気がするだけで、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応でもあります。  
 あまり難しく考えずに「既存実装コピペしてLocalDateTimeのformatterだけ直す」と思っていただければ、心理的負荷は減るのかなと思います。  
 
+<a id="markdown-独自profile実装" name="独自profile実装"></a>
 ### 独自Profile実装
 
 では、独自Profileの実装をしていきましょう。  
@@ -786,13 +857,15 @@ MySQL自体は6桁までの精度しかない(はず)です。
 
 少し長くなりましたが日付対応はこれで完了です。  
 
-## play-slickを利用してモデルの操作を行う
+<a id="markdown-play-slickを利用してモデルの操作を行う" name="play-slickを利用してモデルの操作を行う"></a>
+### play-slickを利用してモデルの操作を行う
 
 最後に今まで作成したモデルやProfileを利用して、slickへ問合せを行うためのモデルを作成していきます。  
 ここまでの実装はplay-slickは関係なくslickのレイヤーでの実装でした。  
 ここからはplay-slickの機能を利用して、モデル作成から簡単なデータ取得まで進めてみたいと思います。  
 
-### そもそもplay-slickとは？
+<a id="markdown-そもそもplay-slickとは" name="そもそもplay-slickとは"></a>
+#### そもそもplay-slickとは？
 
 実は私あまりよくわかっていなかったのですが、そもそもplay-slickとはなんなのでしょうか。  
 と言うことで、公式情報を引用させていただきます。
@@ -811,7 +884,8 @@ evolutionsをサポートしているというのは、比較的どうでもい�
 
 なので、他のモデルであったり先ほどまで作成していたprofileなどライフサイクルと関係ない部分は通常のslickと変わらないと言うことですね。  
 
-### play-slickのコード上の機能
+<a id="markdown-play-slickのコード上の機能" name="play-slickのコード上の機能"></a>
+#### play-slickのコード上の機能
 
 では、そのライフサイクルが云々というのがコード上どうなるかを確認してみます。  
 公式サイトのページでは[こちらを参照](https://www.playframework.com/documentation/2.8.x/PlaySlick#DatabaseConfig-via-runtime-dependency-injection)  
@@ -852,7 +926,8 @@ play-slickを利用することでRDBの違いを簡単に設定ファイルに�
 今回はplay-slickのサンプルプロジェクトを参考に`Repository`レイヤーを作成する形で実装を行っていきます。  
 ここで紹介した`DatabaseConfigProvider`関連のDIもControllerではなくRepositoryに対して行っていきましょう。  
 
-### Tweet関連のDBアクセス用クラスを作成する
+<a id="markdown-tweet関連のdbアクセス用クラスを作成する" name="tweet関連のdbアクセス用クラスを作成する"></a>
+#### Tweet関連のDBアクセス用クラスを作成する
 
 では、さっそくTweet Tableにアクセスするために必要なクラスを作成していきます。  
 slick-codegeで作成したクラスや、play-slickのサンプルを参考にしながら作成していきます。  
@@ -1101,7 +1176,8 @@ def ? = ((
 
 これでDBへアクセスするためのクラスが作成できました。  
 
-### 独自実装したprofileを利用するように設定する
+<a id="markdown-独自実装したprofileを利用するように設定する" name="独自実装したprofileを利用するように設定する"></a>
+#### 独自実装したprofileを利用するように設定する
 
 必要な実装は終わりましたがplay-slick関連の実装の中でprofileを指定する場所が見当たりませんでしたね。  
 ここでは独自実装したprofileを利用してslickが動いてくれるように設定をしていきます。  
@@ -1140,11 +1216,13 @@ confの設定はこれで完了です。
 
 次の章からは、これらを利用してCRUDを修正していきます。  
 
+<a id="markdown-おまけ" name="おまけ"></a>
 ## おまけ
 
 ここからはslickのマッピングの別の書き方を紹介します。  
 今回はあくまでLocalDateTimeに対しての記載になりますが、独自型やその他についてもこれらを利用して対応できます。  
 
+<a id="markdown-mappedcolumntypeを利用したマッピング" name="mappedcolumntypeを利用したマッピング"></a>
 ### MappedColumnTypeを利用したマッピング
 
 通常であればslickはこの方法で外部の型をマッピングできるようにしていきます。  
@@ -1269,6 +1347,7 @@ import slick.models.Tweet
 このようにMappedColumnTypeでの実装だと、必要になるコード量は増えるのに結局ケアもしないといけないということで手間が倍に増えてしまいました。  
 そのため今回のケースについては適切ではなさそうです。  
 
+<a id="markdown-stringのまま受け取って個別にマッピング" name="stringのまま受け取って個別にマッピング"></a>
 ### Stringのまま受け取って個別にマッピング
 
 こちらは実装の中身を理解しやすく、手間は少しかかりますがシンプルな実装だと思います。  

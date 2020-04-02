@@ -1,11 +1,28 @@
-## おまけ
+<a id="markdown-目次" name="目次"></a>
+# 目次
 
-### CustomErrorHandlerの作成
+<!-- TOC -->
+
+- [目次](#目次)
+- [おまけ](#おまけ)
+    - [CustomErrorHandlerの作成](#customerrorhandlerの作成)
+        - [CustomErrorHandlerクラスの作成](#customerrorhandlerクラスの作成)
+        - [利用するエラーハンドラをPlayに設定](#利用するエラーハンドラをplayに設定)
+    - [Option[String]のキャスト事故](#optionstringのキャスト事故)
+
+<!-- /TOC -->
+
+<a id="markdown-おまけ" name="おまけ"></a>
+# おまけ
+
+<a id="markdown-customerrorhandlerの作成" name="customerrorhandlerの作成"></a>
+## CustomErrorHandlerの作成
 
 システム開発ではよくエラーハンドラーを作成したくなることがあるので、作成の仕方を記載します。  
 公式サイトに記載されている内容とほとんど同じではありますが、もう少し知りたい方は[こちら](https://www.playframework.com/documentation/2.8.x/ScalaErrorHandling)を確認ください。  
 
-#### CustomErrorHandlerクラスの作成
+<a id="markdown-customerrorhandlerクラスの作成" name="customerrorhandlerクラスの作成"></a>
+### CustomErrorHandlerクラスの作成
 
 さっそく今回利用する`CustomErrorHandler`クラスを作成していきます。  
 今回のサンプルではPlayがデフォルトで表示する404ページを、以前のセクションで作成した404ページに差し替えてみます。  
@@ -63,7 +80,8 @@ protected def onNotFound(request: RequestHeader, message: String): Future[Result
 Playでは良い感じにそれぞれのメソッドを呼び出してくれるので、対応するメソッドを上書きしてあげれば良いと言う作りです。  
 
 
-#### 利用するエラーハンドラをPlayに設定
+<a id="markdown-利用するエラーハンドラをplayに設定" name="利用するエラーハンドラをplayに設定"></a>
+### 利用するエラーハンドラをPlayに設定
 
 クラスが作成できたらPlayにこのクラスを利用することを伝えてあげましょう。  
 Playではエラーハンドラを指定する方法が2つあります。
@@ -84,43 +102,44 @@ play.http.errorHandler = "http.CustomErrorHandler"
 
 アクセすると以下の画面になっていれば実装完了です。  
 
-<img src="images/18_on_notfound.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/18_on_notfound.png" width="450">
 
-### Option[String]のキャスト事故
+<a id="markdown-optionstringのキャスト事故" name="optionstringのキャスト事故"></a>
+## Option[String]のキャスト事故
 
 資料を作成する中でハマったOptionの不思議な動きを紹介します。  
 この動きは削除機能を作るときにOption同士を比較しようとして、ハマってしまいました。  
 
-<img src="images/29_option_success.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/29_option_success.png" width="450">
 
 まず同じ型のOption同士を比較してみました。  
 これはどうやら動くということが確認できている状態です。  
 
-<img src="images/30_option_asInstanceOf_false.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/30_option_asInstanceOf_false.png" width="450">
 
 asInstnaceOfで変換をかけてみた状態です。  
 比較が一致しなくなってしまったので、REPL上では同じ値は参照も同一になってしまってたまたま一致しているのでは？  と思い、valとvarで宣言をしたものを比較してみています。  
 しかしこの場合には答えが一致してしまいました。  
 
-<img src="images/31_set_but_multi_long.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/31_set_but_multi_long.png" width="450">
 
 ならば回りくどいがSetで排除してやろうと思い、Setに入れたところSetに1が二つ格納できてしまいました。  
 これは本格的によくわからない、という状態です。  
 
-<img src="images/32_long_but_string.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/32_long_but_string.png" width="450">
 
 そしてこれがSeqにして値を取り出してみたものです。  
 データを取得するときに型の不一致でエラーになりました。  
 どうやら見た目上はLongっぽく振る舞われているのですが、実体はStringのまま変更されていないようでした。  
 
-<img src="images/33_string_to_long.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/33_string_to_long.png" width="450">
 
 ただ、本来はstringをasInstanceOfでLongに変換することはできないようです。  
 数字以外も入るので、当然といえば当然ですね。  
 これがOptionでラップされることで、処理自体は通るようになってしまうという挙動みたいです。  
 
-<img src="images/34_seq_string_to_long1.png" width="450">
-<img src="images/35_seq_string_to_long2.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/34_seq_string_to_long1.png" width="450">
+<img src="https://raw.githubusercontent.com/Christina-Inching-Triceps/scala-play_handson/master/lesson1/documents/images/35_seq_string_to_long2.png" width="450">
 
 Optionに限らずモナドはできてしまうのかもしれませんね。  
 
@@ -130,3 +149,4 @@ Optionに限らずモナドはできてしまうのかもしれませんね。
 事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
 あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
 
+[< ハンズオンへ戻る](https://github.com/Christina-Inching-Triceps/scala-play_handson/blob/master/lesson1/documents/03_handson.md)  
