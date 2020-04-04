@@ -1,0 +1,32 @@
+name: Build and Deploy to Github Pages
+
+on:
+  push:
+    branches:
+      - master
+      - feature/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+      - name: Build Lessons
+        run: ./bin/build_all_lesson.sh
+      - name: clone github-pages repo
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          git clone https://${GITHUB_ACTOR}:${TOKEN}@github.com/Christina-Inching-Triceps/Christina-Inching-Triceps.github.io.git
+      - name: Deploy to Github Pages
+        run: |
+          cd Christina-Inching-Triceps.github.io
+          cp -pr ../codelabs .
+          git add .
+          git commit -m "[actions] update codelabs contents"
+          git push origin master
+
