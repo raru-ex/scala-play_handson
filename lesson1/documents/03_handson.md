@@ -36,12 +36,19 @@
 
 基本的に`scala`ファイルは`app`以下に配置していきます。  
 `views`もこのapp以下に配置されていますね。   
+`views`にはtwirlというscalaとhtmlの混ざったViewテンプレートを配置します。  
 
 `conf`には設定関連が配置されています。  
+
 `application.conf`はメインの設定ファイルで、システムから利用する設定情報などを記載します。記載された設定は`controller`にDIされたconfigインスタンスから利用できます。  
-`logback.xml`はログ出力フォーマットや出力条件などを設定するものでplayで採用されている`logback`というライブラリのための設定ファイルになります。  
+今後一番利用することになる設定ファイルです。  
+
+`logback.xml`はログ出力フォーマットや出力条件などを設定するものでPlayで採用されている`logback`というライブラリのための設定ファイルになります。  
+Play独自のものではないため、本ハンズオンでは詳細には取り扱いません。気になる方はlogbackというワードで調べてみると、細かい設定方法が確認できます。  
+
 `messages`は多言語対応や、メッセージ管理用の設定でバリデーションメッセージなど各メッセージの管理に利用できます。  
-`routes`はルーティング情報を記載するファイルです。分割して管理することなども可能です。システムから利用される際には、このファイルの情報がコンパイルされたClassファイルが利用されるようになっています。  
+`routes`はルーティング情報を記載するファイルです。分割して管理することなども可能です。  
+システムから利用される際には、このファイルの情報がコンパイルされたClassファイルが利用されるようになっています。  
 
 `project`以下にはsbt系の設定ファイルを切り出して配置します。  
 ここで定義したものを`build.sbt`で読み込んで利用したりします。  
@@ -52,12 +59,12 @@
 またsbt shellにコマンドを追加するときにも、このファイルに追加を行っていきます。  
 
 概ねフォルダやファイル名が示す通りですが、このような構成になっています。  
-ただ開発するだけであれば、app以下, routesあたりが一番よく触るファイルになると思います。  
+開発するだけであればapp以下, routesあたりが一番よく触るファイルになると思います。  
 
 ## 一覧ページ作成
 
-それではPlayの機能を触りながら、一覧ページから作成していきましょう。  
-前述の通り、今回はPlayに集中するためDBへのアクセスは行わずに作成します。  
+それではPlayの機能を触りながら一覧ページから作成していきましょう。  
+前述の通り、今回はPlayに集中するためDBへのアクセスは行わずに機能を作成していきます。  
 
 ### ルーティング
 
@@ -65,6 +72,7 @@
 Playでは`conf/routes`のファイルでルーティングを管理しています。  
 今の状態の`conf/routes`ファイルを開いてみると以下のようになっていると思います。  
 
+`conf/routes`
 ```
 # ... 一部抜粋
 # An example controller showing a sample home page
@@ -76,20 +84,22 @@ GET     /                           controllers.HomeController.index
 
 今回は一覧表示機能を作成したいので、以下のようにルーティングを設定してみましょう。  
 
+`conf/routes`
 ```
 GET     /tweet/list                 controllers.tweet.TweetController.list
 ```
+
 今回は意図的に`tweet`というパッケージを間に挟んでいます。  
-その場合にどうなるのか、スッとイメージができたりできなかったりすることがあるので参考として追加しているため特別な意味はありません。  
+よくあるサンプルでは独自にパッケージを追加したものがほとんどなく、今後の参考のためにこのようにしています。  
 
 次は設定したルーティングに必要なコントローラーを作成してきましょう。   
 
 ### Controllerの作成
 
-Playでは基本的にはControllerでリクエストに対しての処理を受け取ります。  
-Controller内にあるリクエストに対するメソッドは一般的に`Action`と呼ばれます。(他のプログラミング言語、フレームワークでも同様です)
+PlayではControllerクラスでリクエストに対しての処理を受け取ります。  
+Controller内にあるリクエストに対するメソッドは一般的にアクションと呼ばれます。(他のプログラミング言語、フレームワークでも同様です)  
 
-ここでは`TweetController.scala`を作成して、その中で`list`アクションを作成していきます。  
+ここでは`TweetController.scala`を作成し、その中に`list`アクションを作成していきます。  
 
 `app/controller/tweet/TweetController.scala`
 ```scala
@@ -104,13 +114,13 @@ import play.api.mvc.AnyContent
 /**
   * @SingletonでPlayFrameworkの管理下でSingletonオブジェクトとして本クラスを扱う指定をする
   * @Injectでconstructorの引数をDIする
-  * BaseControllerにはprotected の controllerComponentsが存在するため、そこに代入されている。
-  * controllerComponentsがActionメソッドを持つため、Actionがコールできる
-  *   ActionはcontrollerComponents.actionBuilderと同じ
+  *   BaseControllerにはprotected の controllerComponentsが存在するため、そこに代入される。
   */
 @Singleton
 class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
 
+  // BaseControllerにActionメソッドが定義されているため、Actionがコールできる
+  //   このActionにcontrollerComponentsが利用されているためInject部分でDIされている
   def list() =  Action { implicit request: Request[AnyContent] =>
     // Ok()はステータスコードが200な、Resultをreturnします。
     // つまり正常系としてviews.html.tweet.listのコンテンツを返すということになります。
@@ -119,8 +129,37 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 }
 ```
 
+プログラム内にコメントで各実装の説明を記載していますが、少し難しい部分も多いためよくわからない部分は慣れるまでは一旦深追いしなくても大丈夫です。  
+今回覚えておきたいのは以下の部分です。  
+
+```scala
+def list() =  Action { implicit request: Request[AnyContent] =>
+  Ok(views.html.tweet.list())
+}
+```
+
+まず`Action { ...` の部分は言語として用意された構文ではありません。  
+正確ではありませんが、イメージとしては`Action(request: Request => { block })` というメソッドの呼び出しになります。  
+
+この`{ block }`の部分が`implicit request: Request[AnyContent] =>`以後に記載されているプログラム全体です。  
+今回の場合には以下の部分がブロック内の実装になっていますね。  
+
+```scala
+Ok(views.html.tweet.list())
+```
+
+この部分はHTTPステータスコードの`200 OK`をreturnしつつ、レスポンスとして`views.html.tweet.list`の画面を返すという意味になります。  
+
 これで`http://localhost:9000/list`のリクエストに対してのアクションを作成できました。  
-ただまだこれではエラーが出ていると思います。  
+一度プログラムをコンパイルしてみましょう。  
+コンパイルはターミナルから、以下のコマンドを実行することで行えます。  
+
+```shell
+$ sbt compile
+# sbt ~compileとするとファイル変更を検知するたびに自動ビルドされます。お好みで使い分けてください。
+```
+
+まだエラーになってしまっていますね。  
 それはこのリクエストに対するレスポンスに指定している`views.html.tweet.list`のファイルが存在しないからです。  
 
 次は一覧画面のためのhtmlを作成していきましょう。  
