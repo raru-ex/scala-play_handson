@@ -177,6 +177,7 @@ Twirlのファイルは`views/`直下に配置されており、拡張子が`.sc
 
 では、ファイルを作成して、まずは以下のように中身を実装していきましょう。  
 
+`app/views/tweet/list.scala.html`
 ```html
 @* これはTwirlのコメントです。
 以下はview templeteでの引数を受け取る記載です。
@@ -193,6 +194,7 @@ Twirlのファイルは`views/`直下に配置されており、拡張子が`.sc
 
 ここまで出来たら、一度ページへアクセスして動作を確認してみましょう。 
 以下のような画面が表示されればOKです。  
+[http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)  
 
 <img src="images/12_list_page_part1.png" width="450">
 
@@ -203,8 +205,10 @@ Twirlのファイルは`views/`直下に配置されており、拡張子が`.sc
 
 #### モデルの作成
 
-今回利用する`app/models/Tweet.scala`を作成してきましょう。  
+今回利用するTweetモデルを作成していきます。  
+モデルを配置する場所などは任意に設定できますが、今回はapp以下にmodelsフォルダを作成して進めてみます。  
 
+`app/models/Tweet.scala`
 ```scala
 package models
 
@@ -216,19 +220,18 @@ case class Tweet(
 )
 ```
 
-今のところは非常にシンプルなクラスになりました。  
+非常にシンプルなクラスになりました。  
 `case class`についての説明は省略しますが、非常に雑に説明すると`toString`, `equals`がいい感じに実装されていたり`apply`や`unapply`メソッドなどが実装されている便利なClassです。  
 
 #### モデルをViewへ渡す
 
-先ほど作成したモデルをコントローラからViewへ渡してみましょう。  
+先ほど作成したControllerを修正して、モデルをコントローラからViewへ渡してみましょう。  
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
-// ... 省略
 def list() =  Action { implicit request: Request[AnyContent] =>
   // 1から10までのTweetクラスのインタンスを作成しています。
-  // 1 to 10だとIntになってしまうの1L to 10LでLongにしています。
+  // 1 to 10だとIntになってしまうので1L to 10LでLongにしています。
   val tweets: Seq[Tweet] = (1L to 10).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
 
   // viewの引数としてtweetsを渡します。
@@ -236,7 +239,7 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 }
 ```
 
-今回はDBを利用しないので、Controller側に決め打ちで実装しています。  
+今回はDBを利用しないので、Controller側に決め打ちでモデルのインスタンスを実装しています。  
 `views.html.tweet.list()`に引数としてtweetsを渡すところまではできました。  
 次はView側で引き渡されたTweetを受け取って表示をしてみます。  
 
@@ -244,7 +247,7 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 
 早速コードを修正していきましょう。  
 
-`views/tweet/list.scala.html`
+`app/views/tweet/list.scala.html`
 ```html
 @* Twirl側でもクラスを正しく認識するためにscalaファイルと同様にimportが必要です。  *@
 @import models.Tweet
@@ -266,11 +269,8 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 }
 ```
 
-説明についてはプログラム上のコメントに記載してありますが、新しくimportと引数の受け取り、受け取ったインスタンの出力を追加してあります。  
+修正内容はプログラム上のコメントの通りになりますが、新しくimportと引数の受け取り、受け取ったインスタンの出力を追加してあります。  
 Twirlの記法については[こちら](https://www.playframework.com/documentation/ja/2.3.x/ScalaTemplates)を参考にしてください。  
-
-*1:  
-<img src="images/13_twirl_for_space_error.png" width="450">
 
 これで一覧表示の実装は完了です。  
 ブラウザから動作を確認してみましょう。  
@@ -280,6 +280,10 @@ Twirlの記法については[こちら](https://www.playframework.com/documenta
 
 <img src="images/14_list_view_part1.png" width="450">
 
+
+ちなみに、以下が*1注釈にあるスペースを入れた場合のエラーです  
+<img src="images/13_twirl_for_space_error.png" width="450">
+*1: スペースを入れると出るエラー  
 
 ## 詳細ページ作成
 
@@ -310,20 +314,25 @@ GET     /tweet/:id                  controllers.tweet.TweetController.show(id: L
 ```
 GET     /tweet/detail               controllers.tweet.TweetController.show(id: Long)
 ```
-このとき`http://localhost:9000/tweet/detail?id=1`のようなURLであれば、showに1が渡されます。 
+
+このとき`http://localhost:9000/tweet/detail?id=1`のようなURLであれば、showに1が渡されます。  
 
 ### アクションとViewの追加
 
-routesに追加ができたので、そこに紐づくアクションとViewを追加してきます。  
+ルーティングが追加できたので、そこに紐づくアクションとViewを追加してきます。  
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
 @Singleton
 class TweetController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
-  // DBのMockとして利用したいので、クラスのフィールドとして定義し直す
+  // DBのMockとして利用したいので、先ほどlistに作成したインスタンスをフィールドとして定義し直す
   val tweets: Seq[Tweet] = (1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
 
-  def list() =  ... 省略 ...
+  def list() =  Action { implicit request: Request[AnyContent] =>
+    // フィールドに変数を移したので、ここでの変数定義を削除
+
+    Ok(views.html.tweet.list(tweets.toSeq))
+  }
 
   def show(id: Long) = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.tweet.show(
@@ -337,7 +346,7 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 ```
 
 まずtweetsをフィールドとして定義し直しています。  
-これはDBなしでデータを一定期間保持しておくための実装なのです。  
+これはDBなしでデータを一定期間保持しておくための実装です。  
 
 showメソッドの中でOption型を直接getしていますが、これはnullに対して安全な処理ができるメリットを捨ててしまうことになるため、後ほど修正していきます。  
 
@@ -366,7 +375,7 @@ TwirlについてはSeqだった引数がTweetになっているくらいの変�
 
 ### 一覧からのリンク作成
 
-詳細ページ自体は完成したので、次は先きほど作成した一覧ページからリンクを通してみます。  
+詳細ページが完成したので、次は先きほど作成した一覧ページからリンクを通してみます。  
 
 `views/tweet/list.scala.html`
 ```html
@@ -389,9 +398,9 @@ TwirlについてはSeqだった引数がTweetになっているくらいの変�
 href部分ではroutesファイルの設定から、紐づくURLを作成するようにしてあります。  
 書き方は`{Controllerのパッケージ}.routes.{Controller名}`となります。
   
-コメントにも記載していますが、ウェブ上で良くみる`@routes`から始まる書き方は実は自動的に`controllers.routes`がインポートされているためにcontrollersを省略された状態になっています。  
+コメントにも記載していますが、ウェブ上で良くみる`@routes`から始まる書き方は、Playのデフォルトで`controllers.routes`がインポートされているから動作しているものです。  
 
-ここを理解していないと独自でパッケージを切ったりしていく時に、非常に苦労することになるので頭の隅に残しておきましょう。  
+ここを理解していないと独自でパッケージを切ったりしていく時に非常に苦労することになるので頭の隅に残しておきましょう。  
 
 では、最後に動作確認です。  
 [http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)
@@ -408,13 +417,13 @@ href部分ではroutesファイルの設定から、紐づくURLを作成する�
 `app/controllers/tweet/TweetController.scala`
 ```scala
 def show(id: Long) = Action { implicit request: Request[AnyContent] =>
-    // idが存在して、値が一致する場合にfindが成立
-    tweets.find(_.id.exists(_ == id)) match {
-      case Some(tweet) => Ok(views.html.tweet.show(tweet))
-      // status codeを404にしつつページを返しています。
-      case None        => NotFound(views.html.error.page404())
-   }
-  }
+  // idが存在して、値が一致する場合にfindが成立
+  tweets.find(_.id.exists(_ == id)) match {
+    case Some(tweet) => Ok(views.html.tweet.show(tweet))
+    // status codeを404にしつつページを返しています。
+    case None        => NotFound(views.html.error.page404())
+ }
+}
 ```
 
 この実装では元々`get`をしてしまっていた部分についても、改善するようにしています。  
@@ -426,7 +435,7 @@ Ok, NotFoundは同じクラスなので同様の使い方が可能です。
 
 次にNotFoundで指定してるページを作成します。  
 
-`views/error/page404.scala.html`
+`app/views/error/page404.scala.html`
 ```html
 @()
 
@@ -469,7 +478,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
 今回は `controllers.tweet.routes....` を呼び出したいので `tweet.routes...` で動作します。  
 
 これでリダイレクトの設定は完了です。  
-こういうところハマりやすいので、参考になれば幸いです。  
+こういうところでハマりやすいのですよね。私はハマりました。  
 
 ## 登録ページの作成
 
@@ -488,6 +497,7 @@ GET     /tweet/list                 controllers.tweet.TweetController.list
 GET     /tweet/:id                  controllers.tweet.TweetController.show(id: Long)
 # 下の2つを追加
 GET     /tweet/store                controllers.tweet.TweetController.register
+# actionがないとエラーになるので一旦コメントアウト
 # POST    /tweet/store                controllers.tweet.TweetController.store
 ```
 
@@ -496,6 +506,7 @@ GET     /tweet/store                controllers.tweet.TweetController.register
 
 またルーティングは追加してみましたが、実はこのルーティングは正常に動作しません。  
 理由は`/tweet/:id`の設定の方が上位に書かれているからです。  
+
 playのルーティングは先勝ちになっているようで`/tweet/store`にアクセスしようとすると`:id`の部分に`store`が取られてしまいます。  
 
 これを回避するには2つの方法があります。  
@@ -522,7 +533,7 @@ GET     /tweet/$id<[0-9]+>          controllers.tweet.TweetController.show(id: L
 Formオブジェクトを利用することでPOSTでの値受け取りをフレームワーク側に移譲しつつ、バリデーションなどの処理を簡単に適用することができます。  
 
 習うよりコードを見た方が早いと思うので、早速コードをみてみましょう。  
-Formはいくつかの書き方が出来るので複数の書き方を記載していますが、結論パターン2の書き方で実装を進めていきます。。  
+Formはいくつかの書き方が出来るので複数の書き方を記載していますが、結論`パターン2`の書き方で実装を進めていきます。。  
 
 ```scala
 // パターン2用のcase class
@@ -558,7 +569,6 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
     )
   )
 
-
   // ...省略
 }
 ```
@@ -581,7 +591,7 @@ Formの使い方の詳細は以下の公式ドキュメントを参照してく�
 // controllersクラスの外に記載
 case class TweetFormData(content: String)
 
-// ...省略
+// ...省略: フィールド
 val form = Form(
     // html formのnameがcontentのものを140文字以下の必須文字列に設定する
     mapping(
@@ -589,7 +599,6 @@ val form = Form(
     )(TweetFormData.apply)(TweetFormData.unapply)
   )
 
-// ...省略
 def register() = Action { implicit request: Request[AnyContent] =>
   Ok(views.html.tweet.store(form))
 }
@@ -602,6 +611,7 @@ def store() = Action { implicit request: Request[AnyContent] =>
 
 シンプルですね。  
 ここで先ほど作成したformを画面へ渡しています。  
+
 先ほどの実装ではフォームをいくつか作成していましたが、ここでは`form2`のみを残して`form`にリネームしています。  
 
 #### viewの作成
@@ -625,7 +635,7 @@ def store() = Action { implicit request: Request[AnyContent] =>
 
 今回新しく`@helper`というパッケージを利用しています。  
 ここにはFormを利用するためのヘルパー関数がいくつも用意されています。  
-importに`@import helper._`を追加して利用するのも、わりと一般的です。  
+importに`@import helper._`を追加して利用するのも一般的です。  
 
 ここまで出来たら、一度コンパイルしてみましょう。  
 そうすると以下のようにエラーになると思います。  
@@ -644,7 +654,8 @@ An implicit MessagesProvider instance was not found.  Please see https://www.pla
 何をヒントに修正していけばいいのかは、エラーメッセージの中に書かれていますね。  
 [Passing-MessagesProvider-to-Form-Helpers](https://www.playframework.com/documentation/latest/ScalaForms#Passing-MessagesProvider-to-Form-Helpers)
 
-implicitが出てくると非常に難しく感じてしまいますが、最初は直接手で引数を渡すと面倒くさいから自動で渡すようにしている、くらいの理解で良いと思います。  
+implicitが出てくると非常に難しく感じてしまいますよね。  
+最初は「直接手で引数を渡すと面倒くさいから自動で渡すようにしているんだな」くらいの理解で良いと思います。  
 
 エラー修正のため、messagesProviderをviewへ渡していきます。  
 
@@ -676,10 +687,12 @@ An implicit MessagesProvider instance was not found.  Please see https://www.pla
 ```
 
 先ほどと同様のエラーですが、エラーが出る箇所がコントローラまで上ってきています。  
-そのため、次はコントローラを修正してあげる必要があります。  
-修正方法はエラーメッセージの中にある`Please see`のリンク先を見ればわかるようになっています。  
+というわけで、次はコントローラを修正してあげる必要があります。  
+修正方法はエラーメッセージの中にある`Please see`のリンク先を見ればわかるようになっていますね。  
 
-<img src="images/19_implicit_MessagesProvider.png" width="450">
+<img src="images/19_implicit_MessagesProvider.png" width="450">  
+[https://www.playframework.com/documentation/latest/ScalaForms#Passing-MessagesProvider-to-Form-Helpers](https://www.playframework.com/documentation/latest/ScalaForms#Passing-MessagesProvider-to-Form-Helpers)
+
 
 こちらを参考にコントローラを直してみましょう。  
 
@@ -690,6 +703,7 @@ extends BaseController with I18nSupport {
 ```
 
 `with`句で新しくI18nSupportをmixinしています。  
+Scalaでは2つ目以降の継承, mixinはwithで記載します。  
 これでコンパイルをするとエラーが解決されているのが確認できるはずです。  
 
 ```sh
@@ -733,6 +747,8 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 ```
 
 これでtweetsをデータ保持しつつ可変な配列に変更できました。  
+通常Scalaではimmutableを基本にしたプログラミングをするので、具体的な処理の内容は理解しなくても問題ありません。  
+気になったら各々調べてみてください。  
 
 #### 登録用アクションの実装
 
@@ -748,6 +764,7 @@ def store() = Action { implicit request: Request[AnyContent] =>
     (formWithErrors: Form[TweetFormData]) => {
       BadRequest(views.html.tweet.store(formWithErrors))
     },
+
     // 処理が成功した場合に呼び出される関数
     (tweetFormData: TweetFormData) => {
       // 登録処理としてSeqに画面から受け取ったコンテンツを持つTweetを追加
@@ -763,14 +780,17 @@ def store() = Action { implicit request: Request[AnyContent] =>
 ```
 
 `bindFromRequest`はimplicitでrequestを受け取っています。  
-なので、このリクエスト情報からformで設定したマッピング情報を元に入力チェックと値変換を行います。  
-その処理の成否によって`fold`で処理を分岐しているという動きです。  
+そのため、リクエスト情報からformで設定したマッピング情報を元に入力チェックと値変換を行うことができるんですね。  
+そして、その処理の成否によって`fold`で処理を分岐しているという動きです。  
 
 失敗時には400のBadRequestとして受け取ったフォームデータにエラーメッセージを追加して元の画面に戻しています。  
 成功時には受け取ったデータから新しいTweetを作成して一覧画面へリダイレクトしています。  
 
-ちなみに、`fold()()`で失敗を左、成功を右のような動きは`Option`や`Either`にも似たようなものがあります。  
-`Seq`だとまた雰囲気の違う動きになるのですが、この辺の違いは圏論でいうところの`Catamorphism`というものを理解するとわかるようになるみたいです。  
+ちなみに、`fold()()`で失敗を左、成功を右とするような動きは`Option`や`Either`にも似たようなものがあります。  
+成功は`That's Right`的に右にする慣習があります。  
+
+`Seq`の`fold`はまた雰囲気の違う動きになるのですが、この辺の違いは圏論でいうところの`Catamorphism`というものを理解するとわかるようになるみたいです。  
+
 私はこの辺りは良くわからないので省略しますが、このfoldの使い方は割とよくあるみたいなので気が向いた際に学習してみたり、頭の隅に置いておくとコードが読みやすくなるかもしれません。  
 
 では、処理が書けたの実際に登録画面から登録してみてください。
@@ -815,7 +835,7 @@ CSRFのチェックが正常に行われずにエラーになっているよう�
 ```
 
 今回implicitの引数を一つ追加しています。  
-implicitと書かれていませんが、implicitにした引数のブロックは全部implicitになりますし、それ以外は定義できません。  
+implicitと書かれていませんが、implicitにした引数のブロックは全部implicitになります。それ以外は定義できません。  
 以下のようなことをするとコンパイルエラーになります。  
 `(messagesProvider: MessagesProvider, implicit requestHeader: RequestHeader)`
 
@@ -967,9 +987,9 @@ Tweetのcontentはinput textにするには文字数が多すぎるのでtextare
 このようにhtmlの属性と、helperの動きを制御できました。  
 
 登録を画面を通しての基本的はtwirl, formの利用方法はこれで完了です。  
-次はおさらいも兼ねて変更画面を作成してきましょう。
+次はおさらいも兼ねて変更画面を作成してきましょう。  
 
-ところで、現在symbolは非推奨になってきているはずなのですが、今後play(twirl?)はどうするのでしょうね？
+ところで、現在symbolは非推奨になってきているはずなのですが、今後play(twirl?)はどうするのでしょうね？  
 
 ## 更新ページの作成
 

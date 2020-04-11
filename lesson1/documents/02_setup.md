@@ -51,8 +51,6 @@ organizationは個人のドメインをお持ちの方は、その逆順で記�
 これでコマンドを実行したフォルダ以下に`name`で指定したプロジェクト名のフォルダが作成されます。  
 
 ```sh
-$ tree  -L 2 | pbcopy
-.
 └── play-handson
     ├── app
     ├── build.sbt
