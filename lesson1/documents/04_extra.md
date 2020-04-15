@@ -37,10 +37,10 @@ class CustomErrorHandler @Inject() (
 }
 ```
 
-非常にシンプルですね。  
+基本的な処理は継承元の`DefaultHttpErrorHandler`に移譲できるので、非常にシンプルですね。  
 今回は404ページを差し替えたいので`onNotFound`を`override`しています。  
 
-ちなみにですが`DefaultHttpErrorHandler`の実装はこのようになっています。  
+ちなみにですが`DefaultHttpErrorHandler`での実装はこのようになっています。  
 ```scala
 protected def onNotFound(request: RequestHeader, message: String): Future[Result] = {
     Future.successful {
@@ -60,7 +60,7 @@ protected def onNotFound(request: RequestHeader, message: String): Future[Result
 他にも`onClientError`, `onServerError`, `onForbidden`, `onBadRequest`などが存在しますが、同じように`override`が可能です。  
 詳しくは`play.api.http`パッケージの`HttpErrorHandler.scala`あたりをみてみましょう。  
 
-Playでは良い感じにそれぞれのメソッドを呼び出してくれるので、対応するメソッドを上書きしてあげれば良いと言う作りです。  
+Playがそれらのイベントを良い感じに呼び出してくれるので、対応するメソッドを上書きしてあげれば良いです。  
 
 
 #### 利用するエラーハンドラをPlayに設定
@@ -71,7 +71,7 @@ Playではエラーハンドラを指定する方法が2つあります。
 1. プロジェクトrootにErrorHandler.scalaを配置する
 2. application.confに設定する
 
-今回は2の方法で対応してみたいと思います。  
+今回は汎用性の高い2の方法で対応してみたいと思います。  
 
 `conf/application.conf`
 ```
@@ -82,7 +82,7 @@ play.http.errorHandler = "http.CustomErrorHandler"
 それでは動作をみてみましょう。  
 [http://localhost:9000/hogehoge/fugafuga](http://localhost:9000/hogehoge/fugafuga)
 
-アクセすると以下の画面になっていれば実装完了です。  
+アクセして以下の画面になっていれば実装完了です。  
 
 <img src="images/18_on_notfound.png" width="450">
 
@@ -122,10 +122,10 @@ asInstnaceOfで変換をかけてみた状態です。
 <img src="images/34_seq_string_to_long1.png" width="450">
 <img src="images/35_seq_string_to_long2.png" width="450">
 
-Optionに限らずモナドはできてしまうのかもしれませんね。  
+Optionに限らずジェネリクスを利用しているものはできてしまうのかもしれませんね。  
 
 どうやらasInstanceOfは実際に値を変換するというものではなくて、システム上指定した型として扱うということを宣言するものに近いみたいです。  
-それがモナドのように型を被せてしまうと内側まで検証できずに、そのタイミングでは通ってしまうようです。  
+それがジェネリクスのように型を被せてしまうと内側まで検証できずに、コンパイルでは通ってしまうようです。  
 
 事実、データ取得時には型の不一致でエラーになることから値の変換まではできていないですからね。  
 あまりこのようなことはしないと思いますが、皆さんもお気をつけください。  
