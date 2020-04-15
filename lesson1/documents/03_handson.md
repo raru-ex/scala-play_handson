@@ -998,11 +998,19 @@ Tweetのcontentはinput textにするには文字数が多すぎるのでtextare
 
 ### 実装
 
+登録ページと同様に画面表示用のGETアクションとデータ更新用のPOSTアクションを作成していきます。  
+
 `conf/routes`
 ```
 GET     /tweet/$id<[0-9]+>/edit     controllers.tweet.TweetController.edit(id: Long)
 POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id: Long)
 ```
+
+ルーティングが設定できたので、それぞれのアクションを実装します。  
+登録画面と違い、更新画面では画面表示の段階で更新対象データを画面に表示する必要があります。  
+
+そのためeditアクションが登録と比較して実装コードが多くなっています。  
+しかし、行っていることはroutesから渡ってきたidでデータを取得して渡しているだけなので複雑ではありません。  
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
@@ -1013,10 +1021,8 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
     tweets.find(_.id.exists(_ == id)) match {
       case Some(tweet) =>
         Ok(views.html.tweet.edit(
-          // データを識別するためのidを渡す
-          id,
-          // fillでformに値を詰める
-          form.fill(TweetFormData(tweet.content))
+          id, // データを識別するためのidを渡す
+          form.fill(TweetFormData(tweet.content)) // fillでformに値を詰める
         ))
       case None        =>
         NotFound(views.html.error.page404())
@@ -1045,10 +1051,14 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
   }
 ```
 
-今回は編集画面で利用するformにデフォルト値を埋め込んでいます。  
-その処理をしているのが`form.fill`です。  
-このメソッドにformとマッピングされている型のインスタンスを渡すことでformへ値を詰めることができます。  
+今回は編集画面で利用するformにデフォルト値を埋め込んでいますが、その処理をしているのが`form.fill`です。  
+このメソッドにformとマッピングされている型のインスタンスを渡すと、formへ値を詰めることができます。  
 
+アクションの実装は以上です。  
+概ね登録機能と同じような実装になりました。  
+
+引き続きviewを作成していきましょう。  
+まずは一覧画面からのリンクを貼るために、listページから修正していきます。  
 
 `app/views/tweet/list.scala.html`
 ```html
@@ -1073,6 +1083,10 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
 }
 ```
 
+編集ボタンをaタグで囲ってリンクを作成しました。  
+
+これで編集画面へ遷移できるようになったので、本題の編集画面を作成します。  
+
 `app/views/tweet/edit.scala.html`
 ```html
 @import controllers.tweet.TweetFormData
@@ -1093,14 +1107,14 @@ POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id:
 }
 ```
 
+ここも登録機能とほとんど同じですね。  
 編集画面についてはこれで完了です。  
-一部変更はありましたが、ほとんど完了画面と同じですね。  
 
-余談ではありますが、例えば今回idなどをurlではなくhiddenで埋め込みたい場合には以下のようになります。  
+余談ではありますが、例えばidなどをurlではなくhiddenで埋め込みたい場合には以下のようになります。  
 ```html
 <!-- id: Longの引数を受け取る形式のパターン -->
 <input type="hidden" value="@id" name="id">
-<!-- formにidも持たせるぱた－ん -->
+<!-- formにidも持たせるパターン -->
 <input type="hidden" value="@form.data("id")" name="id">
 ```
 
@@ -1108,7 +1122,7 @@ input hiddenは[こちら](https://stackoverflow.com/questions/16911393/how-to-h
 
 ## 削除機能の作成
 
-CRUDの最後に、Delete機能を作成していきます。  
+CRUDの最後にDelete機能を作成していきます。  
 削除機能はシンプルなのでサクッと進めていきましょう。  
 
 ### 実装
@@ -1141,7 +1155,10 @@ def delete() = Action { implicit request: Request[AnyContent] =>
 ```
 
 今までのやり方と同じだと少し退屈なので、requestから直接値を取る書き方にしてみました。  
-idのtweetsからのfindの仕方が汚いですが、パッといいやり方が浮かびませんでした...  
+tweetsからfindしている部分が汚いのですが、パッといいやり方が浮かびませんでした。  
+気になる方は、自分なりにリファクタリングしてみましょう！  
+
+実装ができたので画面から削除機能が呼び出せるように、一覧ページに削除用のフォームを追加していきます。  
 
 `app/views/tweet/list.scala.html`
 ```html
@@ -1173,16 +1190,16 @@ idのtweetsからのfindの仕方が汚いですが、パッといいやり方�
 }
 ```
 
-idをbodyに入れたいのでformで囲ってpostしています。  
-今回の機能は画面がないので、各自ローカルで動作をみてみてください。  
+idをPOST送信したいのでformで囲って送信しています。  
+今回の機能は画面がないので、各自ローカルで動作を確認してみてください。  
 [http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)
 
-削除が行えていればOKです。
+削除ボタンから削除が行えていればこの機能は完成です。
 
 ## Twirlの修正/デザイン適用
 
-実際にシステムを作る際にはcssやjsを利用して構築していきますよね。  
-ここではふんわりにはなりますが、cssやjsのtwirlでの利用をしてみたいと思います。  
+実際にシステムを作る際にはcssやjsを利用して画面を構築していきますよね。  
+ここでは今後のことを考えて、cssやjsをtwirlから利用をしてみたいと思います。  
 
 ### cssやjsを全体に適用する
 
@@ -1192,7 +1209,7 @@ Twirlの構成を見るのも含めて、まずは全体に適用するところ
 さっそく全体のレイアウトを構成しているファイルからみていきます。  
 
 `app/views/main.scala.html`
-```
+```html
 @(title: String)(content: Html)
 
 <!DOCTYPE html>
@@ -1214,33 +1231,40 @@ Twirlの構成を見るのも含めて、まずは全体に適用するところ
 ```
 
 デフォルトのPlayFrameworkでは`main.scala.html`が全体のlayoutとして利用されています。  
-これが今までstore, listなどのページで書かれていた以下の部分になるわけです。  
+これが今までstore, listなどのページで書かれていた以下の部分になるのです。  
+`app/views/tweet/list.scala.html`
 ```
 @main("一覧画面") {
 }
 ```
 
-よくみると`<body>`の下に`@content`という記載があります。  
+よくみると`main.scala.html`の`<head>`内に`@title`があり、`<body>`の下に`@content`という記載があります。  
 この変数は`main.scala.html`の上部で宣言されている引数になります。  
+以下の部分ですね。  
 ```
 @* ここ *@
 @(title: String)(content: Html)
 ```
 
-`"一覧画面"`が`title`、各Twirlで記述されているHTMLがcontentに格納されることで全体のページが作られるという仕組みです。  
-`{}`の部分が引数というのが最初はわかりづらいですがscalaでは`{}`で引数を渡せ ます。  
+`list.scala.html`の`@main`で引数に渡している`"一覧画面"`が`main.scala.html`の引数`title`に入っています。  
+もう一つの引数である`content: HTML`部分は、各Twirlで記述されているHTMLが格納される仕組みです。  
+
+そのため各画面のTwirlで記述したHTMLがbody以下に展開されるようになります。  
+
+listページなどの`{}`の部分が引数になるのは、最初はわかりづらいですがscalaでは`{}`で引数を渡せます。  
+
 普段使っているmapメソッドも同じですよね。  
 `Seq(1,2,3).map { v => print(v) }` みたいに書くときと同じです。  
 
-ちなみにこのファイルが`content.scala.html`という名前だと、以下のようになります。  
-```
+ちなみにこの`main.scala.html`のファイルが`content.scala.html`という名前だと、以下のようになります。  
+```html
 @content("一覧画面") {
 }
 ```
 
-このmainファイルは普通のhtmlとほぼ同じなので、どうすればファイルが読み込めるかはわかりやすいですね。  
+ここから本題のcss, javascriptの読み込みなりますが、mainファイル自体は普通のhtmlとほぼ同じなので、どうすればファイルが読み込めるかはわかりやすいですね。  
 例えばjavascriptは以下のように読み込まれています。  
-```
+```html
 <script src="@routes.Assets.versioned("javascripts/main.js")" type="text/javascript"></script>
 ```
 
@@ -1250,21 +1274,23 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 ```
 
 routesにあるようにデフォルトでは`public`フォルダと関連づけられており`routes.Assets.versioned("javascripts/main.js")`は`public/javascripts/main.js`を対象に読み込むということになります。  
-またversionedはjs-hogehogeのようなdigestが設定されたファイルも処理できるような作りになっています。  
 
-cssについても同様です。  
-ちなみに今回はreset.cssの中の一つである`sanitize.css`を外部から読み込んでいます。  
+またversionedはjs-hogehogeのようなdigestが設定されたファイルも処理できるような作りになっています。  
+versionedについては、本番環境にデプロイすることを考慮しないうちは、気にせずにそう言うものだと覚えていただいても構いません。  
+
+ファイルの読み込みはcssについても同様です。  
+今回は試しにreset.cssの中の一つである`sanitize.css`を外部から読み込んでいます。  
 ```
 <link href="https://unpkg.com/sanitize.css" rel="stylesheet"/>
 ```
 
 設定を追加したので、これが読み込まれていることを確認してみましょう。  
 [http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)  
-以下のように読み込まれていれがOKです。  
+以下のように読み込まれていればOKです。  
 
 <img src="images/36_link_rel_resetcss.png" width="450">
 
-このようにサイト全体で適用したいものはlayoutのテンプレートになっているファイルを変更することで設定可能です。  
+このようにサイト全体で適用したいものはlayoutのテンプレートになっているファイルを変更することで設定するのが良いと思います。  
 
 
 ### 各ページごとにjs, cssを読み込めるように設定する。
@@ -1307,14 +1333,13 @@ cssについても同様です。
 
 引数を追加して、適当な場所に展開されるようにしています。  
 
-あとはこれを利用してページごとにcssを作成するだけです。  
-今回はざっくりstoreとlistページのcssを作成してみましょう。  
-jsについては特に使う必要がないので、今回は省略します。  
+あとはこれを利用してページごとにcss, jsを作成するだけです。  
+今回はざっくりstoreとlistページのcss, jsを作成してみましょう。  
 
 #### listページ
 
 まずは一覧ページの調整をしてみます。  
-レイアウト自体はおまけなのと、css, htmlはPlayの本題からずれるので細かいことは気にせず実装していきます。  
+レイアウト自体はおまけなのとcss, htmlはPlayの本題からずれるので細かいことは気にせず実装していきます。  
 
 `app/views/tweet/list.scala.html`
 ```html
@@ -1331,7 +1356,7 @@ jsについては特に使う必要がないので、今回は省略します。
   <script src="@routes.Assets.versioned("javascripts/list.js")" type="text/javascript"></script>
 }
 
-@* 読み込んだcss,jsをmainへ渡して適切な場所でロード *@
+@* 読み込みたいcss,jsをmainへ渡す *@
 @main(
   title  = "一覧画面",
   script = script,
@@ -1368,7 +1393,7 @@ jsについては特に使う必要がないので、今回は省略します。
 一度htmlとして変数に格納して、名前付き引数でそれぞれ渡しています。  
 名前付き引数にする必要はないのですが、css,jsどちらが先か気にしなくて良くてわかりやすいので名前付きで渡しました。  
 
-またhtmlが全てliのまま突き進んでしまっていて流石に酷かったので、少しそれらしく調整をしています。  
+またhtmlが全てliのまま突き進んでしまっていて流石に酷かったので、少しそれらしくhtmlを調整しています。  
 
 次はここで読み込んでいるcssを作成します。  
 
@@ -1408,10 +1433,9 @@ jsについては特に使う必要がないので、今回は省略します。
 ```javascript
 // DOM読み込みが完了してから処理
 document.addEventListener("DOMContentLoaded",function(){
-  // HTMLCollectionを配列に変換しつつ削除アイコンを取得
+  // 削除アイコンにonclickイベントを設定
   Array.from(
     document.getElementsByClassName("delete")
-    // それぞれのアイコンに削除フォーム実行のonclickイベントを設定
   ).forEach(action => {
     // eventを取得して、クリックされた要素(target)の親要素であるformをsubmitする
     action.addEventListener("click", (e) => {
@@ -1471,7 +1495,7 @@ document.addEventListener("DOMContentLoaded",function(){
 ```
 
 mainのhtmlでは、コメントにあるようにWebフォントとFontAwesomeを導入しています。  
-それに伴ってcssも修正があります。  
+それに伴ってcssも修正が必要です。  
 
 `public/stylesheets/main.css`
 ```css
