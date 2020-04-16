@@ -232,7 +232,7 @@ case class Tweet(
 def list() =  Action { implicit request: Request[AnyContent] =>
   // 1から10までのTweetクラスのインタンスを作成しています。
   // 1 to 10だとIntになってしまうので1L to 10LでLongにしています。
-  val tweets: Seq[Tweet] = (1L to 10).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
+  val tweets: Seq[Tweet] = (1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
 
   // viewの引数としてtweetsを渡します。
   Ok(views.html.tweet.list(tweets))
