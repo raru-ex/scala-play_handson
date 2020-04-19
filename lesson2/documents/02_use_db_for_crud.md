@@ -24,8 +24,8 @@ private val tweet = new TableQuery(tag => new TweetTable(tag))
 def all(): Future[Seq[Tweet]] = db.run(tweet.result)
 ```
 
-slickではTableQueryのインスタンスを利用してTableへアクセスを行います。  
-細かい内部の動きは割愛しますがTweetTableのインスタンスを渡して作成されているため、Tweetテーブルに対しての処理が行えるようになっているわけですね。  
+slickでは`TableQuery`のインスタンスを利用してTableへアクセスを行います。  
+細かい内部の動きは割愛しますが`TweetTable`のインスタンスを渡して作成されているため、Tweetテーブルに対しての処理が行えるようになっているわけですね。  
 それを行っているのが以下です。  
 
 ```scala
@@ -122,7 +122,7 @@ class TweetController @Inject()(
 ```
 
 ここではInjectの対象にrepositoryを追加しています。  
-こうすることで実行時に`tweetRepository`にインスタンスを注入してくれるため、コントローラないでrepositoryを参照できるようになります。  
+こうすることで実行時に`tweetRepository`にインスタンスを注入してくれるため、コントローラ内でrepositoryを参照できるようになります。  
 
 またRepositoryから受け取ったFutureを処理する必要があるので`(implicit ec: ExecutionContext)`を追加して、Futureに渡せるようにしています。  
 
@@ -142,7 +142,7 @@ def list() =  Action async { implicit request: Request[AnyContent] =>
 修正しているのは2ヶ所あり、一つが`Action async`の部分。  
 もう一つが残りのfor式の部分ですね。  
 
-forの書き方が慣れていないとわかりづらいかもしれませんね。  
+for部分は慣れていないとわかりづらいかもしれませんね。  
 scalaのfor式はmap/flatMapの糖衣構文になっており、今回のように1段の展開の場合には以下のコードと同じになります。  
 
 ```scala
@@ -153,8 +153,8 @@ tweetRepository.all().map(results =>
 
 今回tweetRepositoryのreturnがFuture型になるので、for式のreturnがFuture[Result]型になっています。  
 PlayではActionメソッドはreturnにResult型を要求しますが、これに対して`Action async`としてあげることでreturnの型要求をFuture[Result]にすることができます。  
+そのため型を合わせるためにasyncのメソッドコールが追加されているのです。  
 
-そのためasyncのメソッドコールが追加されているのです。  
 修正内容は比較的シンプルですね。  
 利用しているモデルは変わっていないのでview側の修正は不要です。  
 
@@ -205,10 +205,8 @@ final def apply(block: R[B] => Result): Action[B] = async(block.andThen(Future.s
 Actionの処理として書いていたblockをFutureに包んでasyncへ渡していますね。  
 つまりどのように書いても結局asyncに渡されていくということです。  
 
-Action, Action asyncの使い分けはbody内の処理がreturnする型が書きやすい方を使えばいいわけですね。  
-このあたりが最初は慣れませんが、通常DBやAPIコールをすることが多いのでだいたいasyncに落ち着きますよ。  
-
-
+Action, Action asyncはbody内の処理がreturnする型が書きやすい方を使えばいいわけですね。  
+このあたりが最初は慣れませんが、通常はDBや外部APIコールをすることが多いのでだいたいasyncに落ち着きますよ。  
 
 ## 詳細画面の修正
 
@@ -230,7 +228,7 @@ def findById(id: Long): Future[Option[Tweet]] = db.run(
 
 sampleで作成していた処理と似ていますが、今回は主キーであるidでデータを取得するためOption型でデータを取得しています。  
 filterはSQLでいうところの`where句`にあたります。  
-単純にfilterを行うとデータがSeqとなるため、headOptionでOptionとして取得しているということです。  
+単純にfilterを行うとデータがSeqとなるため、headOptionでOptionとして取得しています。  
 
 慣れてしまうとScalaでmutableのArrayを扱うよりも、こちらの方が余程単純です。  
 
@@ -413,8 +411,6 @@ Future.successful(BadRequest(views.html.tweet.edit(id, formWithErrors)))
 例によってviewの修正は不要なため、これで修正は完了です。  
 以下にアクセスして動作を確認してみてください。  
 [http://localhost:9000/tweet/1/edit](http://localhost:9000/tweet/1/edit)  
-
-
 
 ## 登録画面の修正
 

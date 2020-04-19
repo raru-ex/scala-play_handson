@@ -1,17 +1,26 @@
+# docker-composeの構造のバージョンを指定 (現時点の最新)
 version: '3'
+# dockerで利用したい各コンテナ(service)をまとめる要素
 services:
+  # play-scalaという名前をつけて、Serviceを設定。このコンテナはplayを動作させるためのコンテナになります
   play-scala:
+    # 利用するimageを指定。今回はjava8系で動作するsbtの最新imageを指定しています
     image: hseeberger/scala-sbt:8u242_1.3.8_2.13.1
+    # 特にこだわりはないので、service名とcontainer名を同じにしています。
     container_name: play-scala
+    # playのデフォルト利用ポートが9000番なので9000を指定。hostからも9000でアクセスできるように設定しています
     ports:
       - "9000:9000"
+    # 初回起動時にキャッシュされる依存ライブラリ群をキャッシュするためにvolumesに指定
     volumes:
       - .:/source
       - ./.ivy2:/root/.ivy2
       - ./.sbt:/root/.sbt
       - ./.cache:/root/.cache
     working_dir: /source
+    # 端末に入って作業することが多いので、端末を割り当てる
     tty: true
+    # 今後DB接続を行うため、ネットワークに属させる
     networks:
       - app-net
   db:
@@ -22,15 +31,17 @@ services:
     volumes:
       # 初期データを投入するSQLが格納されているdir
       - ./docker/db/init:/docker-entrypoint-initdb.d
-      # データを永続化するときにマウントするdirを指定
+      # 永続化するときにマウントするdir
       - ./docker/db/mysql_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
+      # Container内にデータベースを作成
       MYSQL_DATABASE: twitter_clone
-      TZ: Asia/Tokyo
     networks:
       - app-net
 
+# 今後play, db間での通信があるためネットワークを構築
 networks:
   app-net:
     driver: bridge
+
