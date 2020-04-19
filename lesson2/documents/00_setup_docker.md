@@ -91,7 +91,6 @@ $ docker-compose ps
 #    Name      Command   State           Ports
 # -----------------------------------------------------
 # play-scala   bash      Up      0.0.0.0:9000->9000/tcp
-
 ```
 
 コンテナの起動ができたら、実際にplayを起動してみましょう。  
@@ -256,6 +255,9 @@ networks:
 設定が完了したため、Serviceの動作を確認します。  
 
 ```sh
+# ... 前回起動いたプロセスが起動中の場合 ...
+$ docker-compose down
+
 $ docker-compose up -d
 # ... 起動まで待ちます ...
 

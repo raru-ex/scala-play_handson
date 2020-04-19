@@ -13,12 +13,13 @@ Playでは`build.sbt`に依存関係を追加することで、対象のライ�
 
 ```scala 
 evolutions,
+// 最新のplay-slickを指定。
 "com.typesafe.play"      %% "play-slick"            % "5.0.0",
 "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
 // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
 // https://github.com/playframework/play-slick#all-releases
 "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
-// 指定すべきバージョンは以下のリンク先
+// 指定すべきmysql-connectorのバージョンは以下のリンク先を参照
 // https://scala-slick.org/doc/3.3.1/database.html
 "mysql"                   % "mysql-connector-java"  % "6.0.6",
 ```
@@ -39,12 +40,13 @@ libraryDependencies ++= Seq(
   guice,
   evolutions,
   "org.scalatestplus.play" %% "scalatestplus-play"    % "5.0.0" % Test,
+  // 最新のplay-slickを指定。
   "com.typesafe.play"      %% "play-slick"            % "5.0.0",
   "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
   // play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
   // https://github.com/playframework/play-slick#all-releases
   "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
-  // 指定すべきバージョンは以下のリンク先
+  // 指定すべきmysql-connectorのバージョンは以下のリンク先を参照
   // https://scala-slick.org/doc/3.3.1/database.html
   "mysql"                   % "mysql-connector-java"  % "6.0.6",
 )
@@ -58,7 +60,10 @@ $ docker-compose exec play-scala bash
 /source# sbt update
 ```
 
+sbtの内容が変更した時はupdateコマンドで更新できます。  
 今回追加したライブラリのダウンロードが始まれば設定はOKです。  
+
+ちなみに`sbt run`, `sbt compile`でも実行前に更新を確認して反映してくれるので、そちらでも更新可能です。  
 
 ## slick-evolutionsの設定
 
@@ -73,7 +78,7 @@ evolutions以外ではFlywayというものも広く利用されています。
 ### DBへ接続するためにconfを設定
 
 slick-evolutionsは名前の通りSlickを経由してDBへの接続を行います。  
-そのためまずはslickがDBへ接続できるように設定をしてあげる必要があります。  
+そのため、まずはslickがDBへ接続できるように設定をしてあげる必要があります。  
 
 playはデフォルトで`application.conf`の設定を読み込むようになっているので、このファイルに設定を追加していきましょう。  
 今回はmysqlを利用するので以下のように設定を追加してください。  
@@ -284,7 +289,8 @@ slick部分の構造が少し変更されているので気をつけてくださ
 
 #### TypesafeConfig導入の補足
 
-通常のplayではconfigはControllerへのDIから利用するため、直接ロードするのはあまり御行儀が良いものではないのですが、バッチプログラムでControllerを経由できないことや、そんなにテストするようなコードでもないので直接取り出すことを選択しています。  
+通常のplayではconfigはControllerへのDIから利用するため、直接ロードするのはあまり御行儀が良いものではありません。  
+しかしバッチプログラムではControllerを経由できない、そんなにテストするようなコードでもない、ということで直接取り出すことを選択しています。  
 
 ### SlickCodeGen Taskの実行
 
@@ -369,7 +375,7 @@ DROP TABLE tweet;
 ### SlickCodeGenのプログラム修正
 
 今度はSQLに合わせて、SlickCodeGen関連のファイルを修正していきます。  
-今回修正するファイルは以下
+今回修正するファイルは以下  
 
 - [Rename]: app/tasks/SlickCodeGen.scala -> app/tasks/CustomSlickCodeGen.scala
 - build.sbt
@@ -450,13 +456,15 @@ object CustomSlickCodeGen extends App {
 
 ```
 
+`build.sbt`
 ```scala
 // -- build.sbt: slickCodeGenコマンドに紐づけるクラスの変更
 slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCodeGen").value
 ```
 
 今回の修正はやや複雑になっていますね。  
-いろいろと実装が入っていますが、注目すべきポイントは1点とおまけ1つです。
+いろいろと実装が入っていますが、注目すべきポイントは1点です。  
+おまけ的な実装も一つあるので、そちらも補足します。  
 
 #### Codegenで自動生成される日付型の型を変更
 
@@ -475,10 +483,10 @@ override def Column = new Column(_){
 ここでColumn定義の実装をoverrideして差し替えています。  
 今回はmodelの型をcaseでチェックして`java.sql.Timestamp`のときに`LocalDateTime`になるように変更をかけていますね。  
   
-文字列で指定していますが、結局Codegenでは`.scala`の拡張子を持つテキストファイルを出力しているだけなので、最終成果物であるテキスト上で出力されて欲しい文字列に置き換えてあげれば良いです。  
+文字列で指定していますが、結局Codegenでは`.scala`の拡張子を持つテキストファイルを出力しているだけなのです。  
+そのため最終成果物であるテキスト上で出力されて欲しい文字列に置き換えてあげれば、目的の出力が得られます。  
   
-ちなみに、このままではimportが不明確で実際にプログラムから利用するときにはLocalDateTimeが見つけられません。  
-そのため、その少し前の部分で以下のようにしてimport文を追加しています。  
+ちなみに、このままではimportが不明確で実際にプログラムから利用するときにはLocalDateTimeが見つけらないため、少し前の部分で以下のようにしてimport文を追加しています。  
 
 ```scala
 // LocalDateTimeのimportを追加
@@ -528,19 +536,21 @@ val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ```
 
 ちゃんとLocalDateTimeになっていますね。  
-長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。
+長くなってしまいましたが、これでslick-codegen側の設定は一旦完了になります。  
 
 ## slickのモデルを実装
 
 基本的なslickの設定が完了したので、evolutionsで作成されたモデルなどを利用しながら実際のシステムで利用するモデルを作成してきます。  
 実装方法が何種類かあるのですが、利用してるRDBに応じて少し対応方法が変わります。  
-今回はMySQLを利用しているのでそれ前提で記載していきます。  
+今回はMySQLを利用しているのでその前提で記載していきます。  
 
 ### Slick3.3とMySQLを組み合わせた場合の日付型対応
 
 SlickはRDBごとに日付関連を扱うときに利用する型が違っています。  
-特にMySQLはほぼ全て文字列として取り扱おうとするため、そのままの状態では利用しづらくなってしまいます。  
+特にMySQLはほぼほぼ文字列として取り扱おうとするため、そのままの状態では利用しづらくなってしまいます。  
+
 今回はこの部分を自前の追加実装で吸収していきたいと思います。  
+
 対応方法は何種類かあるのですが、今回はそのうち採用していく方法の実装のみ行います。  
 おまけ部分で他の実装方法についても紹介しますので、気になる方はおまけをご覧ください。  
 
@@ -548,7 +558,7 @@ SlickはRDBごとに日付関連を扱うときに利用する型が違ってい
 
 RDBごとに違うとありましたが、実際に確認してみます。  
 以下のリンクから公式サイトの情報が確認できますが、リンク先の情報の画像も合わせて載せておきます。  
-[https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)
+[https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns](https://scala-slick.org/doc/3.3.1/upgrade.html#support-for-java.time-columns)  
 
 [MySQLの場合]  
 <img src="images/03_profile_mysql.png" width="450">
@@ -560,11 +570,11 @@ RDBごとに違うとありましたが、実際に確認してみます。
 <img src="images/05_profile_oracle.png" width="450">
 
 このようにそれぞれ日付型の型に割り当てられたSQL Typeに差があります。  
-細かいことは不明ですが厳密にやろうとするとMySQLが日付関連のデータの持ち方に振れ幅が大きくてparserが統一できなかったのかもしれないですね。 (わかりませんが)  
+細かいことは不明ですが、厳密にやろうとするとMySQLでは日付関連のデータの持ち方に振れ幅が大きくて、parserが統一できなかったのかもしれないですね。 (わかりませんが)  
 
 ### 未対応の場合のエラーと原因
 
-特に何も対応せずに今のままの状態で実装を進めるとDBアクセスを行なったタイミングで以下のようなエラーになります。  
+特に何も対応せずに実装を進めるとDBアクセスを行なったタイミングで以下のようなエラーになります。  
 
 ```sh
 play.api.http.HttpErrorHandlerExceptions$$anon$1: Execution exception[[DateTimeParseException: Text '2020-03-15 13:15:00' could not be parsed at index 10]]
@@ -617,6 +627,7 @@ object Tables extends {
 では、引き続きコードを追ってみましょう。  
 早速MySQLProfileの`getValue`を見ていきます。  
 以下が、そのコードです。  
+
 ```scala
     override val localDateTimeType : LocalDateTimeJdbcType = new LocalDateTimeJdbcType {
       override def sqlType : Int = {
@@ -647,8 +658,8 @@ LocalDateTimeの値を`getValue`を見てください。
 今回はここでエラーが出てしまうということなのです。  
 
 LocalDateTime.parseのデフォルトフォーマットは`yyyy-MM-ddTHH:mm:ss`というフォーマットになっているため、このフォーマットに合わない日付文字列は全てparseで落ちてしまいます。  
-今回の場合`yyyy-MM-dd HH:mm:ss`の文字列で渡ってしまうため`T`が足りておらず、エラーになってしまうわけですね。  
-indexもちょうど10番目です。  
+今回の場合`yyyy-MM-dd HH:mm:ss`の文字列で渡ってしまうため`T`が足りておらず、エラーになってしまうのです。  
+indexもちょうど10番目ですね。  
 
 エラーの内容と原因がわかったので、次はこれを解決していきましょう。  
 
@@ -667,7 +678,7 @@ indexもちょうど10番目です。
 私は一番理解しやすいのは1番だと考えていて、それがrookies資料としては適切なのではと悩みました。  
 ただ、全てのテーブルのモデルのmappingを書いていくのは効率が悪すぎるのと、公式が推奨する形が一番御行儀が良いと思うので、Profile拡張で作成をしていきたいと思います。  
 
-とはいえ、Profile拡張という言葉の持つパワーのせいで難しい気がするだけで、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応でもあります。  
+Profile拡張という言葉の持つパワーのせいで難しい気がしますが、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応です。  
 あまり難しく考えずに「既存実装コピペしてLocalDateTimeのformatterだけ直す」と思っていただければ、心理的負荷は減るのかなと思います。  
 
 ### 独自Profile実装
@@ -776,7 +787,7 @@ object MyDBProfile extends MyDBProfile
 case dateString => LocalDateTime.parse(dateString, formatter)
 ```
 
-ほとんどは元のMySQLProfileの実装をコピーして持ってきているだけです。  
+この部分以外の実装はMySQLProfileをコピーして持ってきているだけです。  
 しかしLocalDateTimeのparse処理が修正されているので、このProfileを利用してSlickに設定すれば特に他には何もすることなくLocalDateTimeがモデルにマッピングできるようになります。  
 
 ちょっと話は逸れますが`.appendFraction`便利ですね。  
@@ -806,7 +817,7 @@ The Play Slick module makes Slick a first-class citizen of Play, and consists of
 
 evolutionsをサポートしているというのは、比較的どうでもいいのでもう片方に注目します。  
 
-私もなんとなく思ってましたが、やっぱりslickをplayのライフサイクルの中に組み込んでくれるのがplay-slickのようです。  
+私もなんとなく思ってましたが、slickをplayのライフサイクルの中に組み込んでくれるものがplay-slickのようです。  
 設定情報からDB connectionを作成したり破棄したりの管理を良い感じにやってくれるもの、くらいの認識で良いのではないかと思います。  
 
 なので、他のモデルであったり先ほどまで作成していたprofileなどライフサイクルと関係ない部分は通常のslickと変わらないと言うことですね。  
@@ -952,7 +963,7 @@ extends HasDatabaseConfigProvider[JdbcProfile] {
 Repositoryはインスタンスを複数持つ必要がない(とおもう)ので`@Singleton` を付与して、Singletonオブジェクトにしています。  
 
 また今回`(implicit ec: ExecutionContext)`の記述も追加しています。  
-slickは問合せ結果を`Future`型で返してくるため、Futureを利用するために必要なExecutionContextが必要になります。  
+slickは問合せ結果を`Future`型で返してくるため、Futureを利用するためにExecutionContextが必要になります。  
 そこでPlay標準で用意されているExecutionContextを利用できるように、クラス宣言時にDIで受け取るようにしています。  
 この辺はScalaの話になってしまうので本ハンズオンでは割愛します。  
 
@@ -1007,9 +1018,6 @@ private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("t
 これはslick-codegenで作成されたものを参考に修正を行っています。  
 
 以下の部分がTableとScala側で利用するためのデータ型のマッピングです。  
-`column[LocalDateTime]`の部分が、独自で作成してMyDBProfileのおかげでマッピングできるようになっている場所です。  
-この部分が通常のORMのモデル定義風ですよね。  
-
 ```scala
 // Tableとのカラムマッピング
 val id:        Rep[Long]          = column[Long]("id", O.AutoInc, O.PrimaryKey)
@@ -1018,6 +1026,9 @@ val postedAt:  Rep[LocalDateTime] = column[LocalDateTime]("posted_at")
 val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")
 val updatedAt: Rep[LocalDateTime] = column[LocalDateTime]("updated_at")
 ```
+
+`column[LocalDateTime]`の部分が、独自で作成してMyDBProfileのおかげでマッピングできるようになっている場所です。  
+この部分が通常のORMのモデル定義風ですよね。  
 
 次に以下の部分。  
 ```scala
@@ -1037,7 +1048,7 @@ sql"SELECT * FROM tweet".as[Tweet]
 このas句を理解するために必要なimplicitというわけですね。  
 これがない場合には `as[(Long, String, LocalDateTime, LocalDateTime, LocalDateTime)]`のようにタプルで指定して利用する形になります。  
 
-なので、この実装は必ずしも必須の実装ではありません。  
+そのためPlanSQLを使わない場合や都度タプルで実装する場合には、この実装は必要ではありません。  
 
 次に`def *`  
 これが一番重要で、slickからデータベースへアクセスしたときに通常利用されるマッピングの定義です。  
@@ -1049,7 +1060,7 @@ def * = (id.?, content, postedAt, createdAt, updatedAt) <> (Tweet.tupled, Tweet.
 ```
 
 ここに定義した内容でselect, insert, updateなどの処理をDB側に上手くマッピングしてデータの流し込みや受け取りが行われます。  
-`id.?`の部分ですが、これはPrimaryKeyに対して行える呼び出し方になります。  
+`id.?`の部分ですが、これはPrimaryKeyに対してのみ行える呼び出し方になります。  
 主キーはAutoIncで自動採番にしてinsert時にはプログラムから指定せず、DB側で連番を付与させることが多いですよね。  
 そのためSlickでも登録時にはOptionであることを許容して、select時には非Optionの型で処理できるように`.?`という定義の仕方を用意してくれています。  
 これを利用することでかなり定義をシンプルにかけるので、覚えておいてください。  
@@ -1068,7 +1079,7 @@ def * = (id, content, postedAt, createdAt, updatedAt) <> (
 )
 ```
 
-これは`id.?`を使わなかった場合の書き方の一例みたいな形ですが、やっていることはtupled, unapplyを自分で書いているということです。  
+これは`id.?`を使わなかった場合の書き方の一例みたいな形ですが、やっていることはtupled, unapplyを自分で書いているだけです。  
 
 そして最後に`def ?`です。  
 
@@ -1097,7 +1108,8 @@ def ? = ((
 )
 ```
 ここもコメントにあるように、idの部分をOptionで包むようにしています。  
-この実装は実は私もよくわかっていないのですが、データがないときにもなんかいい感じにしてくれるっぽいことが書いてありますね。  
+この実装は実は私もよくわかっていないのですが、データがないときにもなんかいい感じにしてくれるっぽいことが書いてあります。  
+Left Outer Joinなどで使われるのかもしれないですね。  
 
 これでDBへアクセスするためのクラスが作成できました。  
 
@@ -1136,7 +1148,7 @@ slick関連の設定だけ抜粋しています。
 
 confの設定はこれで完了です。  
 
-これでslickに関する実装は完了です！  
+そしてslickに関する実装もこれで完了です！  
 
 次の章からは、これらを利用してCRUDを修正していきます。  
 
