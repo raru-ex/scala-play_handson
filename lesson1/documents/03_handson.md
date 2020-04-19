@@ -36,15 +36,17 @@
 
 基本的に`scala`ファイルは`app`以下に配置していきます。  
 `views`もこのapp以下に配置されていますね。   
-`views`にはtwirlというscalaとhtmlの混ざったViewテンプレートを配置します。  
+`views`は名前の通り画面側の実装を配置するのですが、PlayFrameworkではtwirlというscalaとhtmlの混ざったViewテンプレートを利用します。  
 
 `conf`には設定関連が配置されています。  
 
-`application.conf`はメインの設定ファイルで、システムから利用する設定情報などを記載します。記載された設定は`controller`にDIされたconfigインスタンスから利用できます。  
-今後一番利用することになる設定ファイルです。  
+`application.conf`はメインの設定ファイルで、システムから利用する設定情報などを記載します。  
+記載された設定は`controller`にDIされたconfigインスタンスから利用することが多いです。  
+今後一番利用することになる設定ファイルなので覚えておきましょう。  
 
-`logback.xml`はログ出力フォーマットや出力条件などを設定するものでPlayで採用されている`logback`というライブラリのための設定ファイルになります。  
-Play独自のものではないため、本ハンズオンでは詳細には取り扱いません。気になる方はlogbackというワードで調べてみると、細かい設定方法が確認できます。  
+`logback.xml`はログ出力フォーマットや出力条件などを設定するもので、Playで採用されている`logback`というライブラリのための設定ファイルになります。  
+Play独自のものではないため、本ハンズオンでは詳細には取り扱いません。  
+気になる方はlogbackというワードで調べてみると、細かい設定方法が確認できます。  
 
 `messages`は多言語対応や、メッセージ管理用の設定でバリデーションメッセージなど各メッセージの管理に利用できます。  
 `routes`はルーティング情報を記載するファイルです。分割して管理することなども可能です。  
@@ -232,7 +234,7 @@ case class Tweet(
 def list() =  Action { implicit request: Request[AnyContent] =>
   // 1から10までのTweetクラスのインタンスを作成しています。
   // 1 to 10だとIntになってしまうので1L to 10LでLongにしています。
-  val tweets: Seq[Tweet] = (1L to 10).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
+  val tweets: Seq[Tweet] = (1L to 10L).map(i => Tweet(Some(i), s"test tweet${i.toString}"))
 
   // viewの引数としてtweetsを渡します。
   Ok(views.html.tweet.list(tweets))
@@ -998,7 +1000,7 @@ Tweetのcontentはinput textにするには文字数が多すぎるのでtextare
 
 ### 実装
 
-登録ページと同様に画面表示用のGETアクションとデータ更新用のPOSTアクションを作成していきます。  
+まずは登録ページと同様に画面表示用のGETアクションとデータ更新用のPOSTアクションを作成していきます。  
 
 `conf/routes`
 ```
@@ -1006,10 +1008,9 @@ GET     /tweet/$id<[0-9]+>/edit     controllers.tweet.TweetController.edit(id: L
 POST    /tweet/$id<[0-9]+>/update   controllers.tweet.TweetController.update(id: Long)
 ```
 
-ルーティングが設定できたので、それぞれのアクションを実装します。  
-登録画面と違い、更新画面では画面表示の段階で更新対象データを画面に表示する必要があります。  
+ルーティングを作成したら今まで同様にそれぞれに対するアクションを実装します。  
 
-そのためeditアクションが登録と比較して実装コードが多くなっています。  
+更新画面では画面表示の段階で更新対象データを画面に表示する必要があるため、登録画面と比べるとGETアクションにも処理が追加されています。  
 しかし、行っていることはroutesから渡ってきたidでデータを取得して渡しているだけなので複雑ではありません。  
 
 `app/controllers/tweet/TweetController.scala`
