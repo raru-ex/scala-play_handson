@@ -3,4 +3,5 @@
 # 全てのLessonをビルド
 /bin/bash ./bin/build_codelab_src.sh lesson1/documents
 /bin/bash ./bin/build_codelab_src.sh lesson2/documents
+/bin/bash ./bin/build_codelab_src.sh lesson2.5/documents
 
