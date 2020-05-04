@@ -284,8 +284,7 @@ Twirlの記法については[こちら](https://www.playframework.com/documenta
 
 
 ちなみに、以下が*1注釈にあるスペースを入れた場合のエラーです  
-<img src="images/13_twirl_for_space_error.png" width="450">
-*1: スペースを入れると出るエラー  
+<img src="images/13_twirl_for_space_error.png" width="450">  
 
 ## 詳細ページ作成
 
