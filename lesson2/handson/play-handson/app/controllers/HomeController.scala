@@ -21,8 +21,4 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
   def index() = Action { implicit request: Request[AnyContent] =>
     Redirect(tweet.routes.TweetController.list())
   }
-
-  private def hoge(request: String => Int) = {
-   1
-  }
 }

@@ -4,6 +4,8 @@
 # ~~~~
 
 # An example controller showing a sample home page
+GET     /                           controllers.HomeController.index
+
 GET     /tweet/list                 controllers.tweet.TweetController.list
 GET     /tweet/$id<[0-9]+>          controllers.tweet.TweetController.show(id: Long)
 GET     /tweet/store                controllers.tweet.TweetController.register
