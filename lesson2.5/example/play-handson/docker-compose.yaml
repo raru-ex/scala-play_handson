@@ -36,8 +36,8 @@ services:
       - "5555:5555"
     container_name: play_angular
     volumes:
-      - ./ui:/source
-    working_dir: /source
+      - ./:/source
+    working_dir: /source/ui/angular-elements
     tty: true
 
 networks:
