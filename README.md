@@ -31,6 +31,7 @@ Scala-Playframeworkの学習をするためのハンズオン資料です。
     ├── documents
     ├── example
     └── handson
+...
 ```
 
 - documents
@@ -42,24 +43,18 @@ Scala-Playframeworkの学習をするためのハンズオン資料です。
 
 ## build
 
-build documents  
+binフォルダ以下にはビルド用のスクリプトが配置されています。  
+以下のようなコマンドを実行することMarkdownファイルをCodelabs形式のファイルとして出力することができます。  
 
 ```sh
 $ ./bin/build_codelab_src.sh lesson1/documents
 $ ./bin/build_codelab_src.sh lesson2/documents
+$ ./bin/build_codelab_src.sh lesson2.5/documents
 ```
+
+出力されたファイルはリポジトリ直下の `/codelabs` へ出力されます。  
 
 ## License
 
 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="クリエイティブ・コモンズ・ライセンス" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />この 作品 は <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">クリエイティブ・コモンズ 表示 - 非営利 - 継承 4.0 国際 ライセンス</a>の下に提供されています。
-
-
-# etc
-
-## TODO/悩み
-
-1. 外部キー制約やjoin
-1. DBのTimezone設定を日本時間に変更
-1. sbtのtask設定を理解して説明を追加する
-1. mysqlのtimestamp, datetimeどちらを使うべきか
 

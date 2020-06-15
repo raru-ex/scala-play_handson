@@ -10,6 +10,8 @@ authors: chiristina.inching.triceps
 
 ## 基本情報
 
+本ハンズオンではTwitterを模倣したシステムを構築しながらPlay Frameworkの使い方を学んでいきます。  
+
 Lesson1ではPlayを利用して、簡単なCRUDを作成していきます。  
 最初はPlayに集中するためにDB接続やその他周辺技術には触れません。  
 まずはPlay Frameworkをシンプルな状態のまま利用して、Play Frameworkに慣れていきましょう。  
