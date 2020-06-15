@@ -34,34 +34,43 @@
 └── test
 ```
 
-基本的に`scala`ファイルは`app`以下に配置していきます。  
-`views`もこのapp以下に配置されていますね。   
+### appフォルダ
+
+アプリケーションのプログラムファイルは`app`以下に配置していきます。  
+サーバサイドのプログラム以外に、画面表示のための`views`もこのapp以下に配置されていますね。  
+  
 `views`は名前の通り画面側の実装を配置するのですが、PlayFrameworkではtwirlというscalaとhtmlの混ざったViewテンプレートを利用します。  
 
-`conf`には設定関連が配置されています。  
+### confフォルダ
+
+`conf`には設定関連のファイルが配置されています。  
 
 `application.conf`はメインの設定ファイルで、システムから利用する設定情報などを記載します。  
-記載された設定は`controller`にDIされたconfigインスタンスから利用することが多いです。  
-今後一番利用することになる設定ファイルなので覚えておきましょう。  
+細かく管理するためにファイル分割を行うことも可能ですが、システムを制御するための設定情報はこのファイルに記載していきましょう。  
+今後一番利用することになる設定ファイルなので覚えおいてください。  
 
 `logback.xml`はログ出力フォーマットや出力条件などを設定するもので、Playで採用されている`logback`というライブラリのための設定ファイルになります。  
 Play独自のものではないため、本ハンズオンでは詳細には取り扱いません。  
 気になる方はlogbackというワードで調べてみると、細かい設定方法が確認できます。  
 
 `messages`は多言語対応や、メッセージ管理用の設定でバリデーションメッセージなど各メッセージの管理に利用できます。  
-`routes`はルーティング情報を記載するファイルです。分割して管理することなども可能です。  
+本ハンズオンでも基本的な使い方を取り扱っているので、利用方法はその際に紹介します。  
+
+`routes`はルーティング情報を記載するファイルです。こちらも分割して管理することなども可能です。  
 システムから利用される際には、このファイルの情報がコンパイルされたClassファイルが利用されるようになっています。  
 
-`project`以下にはsbt系の設定ファイルを切り出して配置します。  
-ここで定義したものを`build.sbt`で読み込んで利用したりします。  
-例えばscalafmtなどのプラグインを`plugins.sbt`に追加して利用したりします。  
+### sbt関連
 
 `build.sbt`はプロジェクトのビルド設定ファイルです。  
 ビルドするための依存ライブラリを記述したり、デプロイ設定を記載したりします。  
 またsbt shellにコマンドを追加するときにも、このファイルに追加を行っていきます。  
 
-概ねフォルダやファイル名が示す通りですが、このような構成になっています。  
-開発するだけであればapp以下, routesあたりが一番よく触るファイルになると思います。  
+`project`以下にもsbt系の設定ファイルを切り出して配置します。  
+ここで定義したものを`build.sbt`で読み込んで利用することなどが多いです。  
+
+例えばbuild.sbtに記載する情報のうち依存関係に関連するものをDependencies.sbtとして切り出して、build.sbtにimportする、という使い方もできます。  
+他にはscalafmtなどのプラグインを`plugins.sbt`に追加して利用できるようにしたりすることが多いです。  
+
 
 ## 一覧ページ作成
 
@@ -71,8 +80,9 @@ Play独自のものではないため、本ハンズオンでは詳細には取�
 ### ルーティング
 
 まずはリクエストに対する処理の設定をみていきます。  
-Playでは`conf/routes`のファイルでルーティングを管理しています。  
-今の状態の`conf/routes`ファイルを開いてみると以下のようになっていると思います。  
+
+先述の通り、Playでは`conf/routes`のファイルでルーティングを管理しています。  
+今の状態の`conf/routes`ファイルを開いてみると、以下のようになっています。  
 
 `conf/routes`
 ```
@@ -81,8 +91,8 @@ Playでは`conf/routes`のファイルでルーティングを管理していま
 GET     /                           controllers.HomeController.index
 ```
 
-これは`GET`Methodの`/`へのリクエストに対して`controllers.HomeController.index`を設定すると言うことになります。  
-この設定のおかげで、Playは`http://localhost:9000`、つまりルート(`/`)に対して`HomeController`の`index`アクションを実行するということを理解できるようになります。  
+これは`GET`Methodの`/`へのリクエストに対して`controllers.HomeController.index`を設定するという設定になります。  
+この設定のおかげで、Playは`http://localhost:9000`に対して`/`でリクエストを受け取り、`HomeController`の`index`アクションを実行するということを理解できるようになります。  
 
 今回は一覧表示機能を作成したいので、以下のようにルーティングを設定してみましょう。  
 
@@ -92,16 +102,17 @@ GET     /tweet/list                 controllers.tweet.TweetController.list
 ```
 
 今回は意図的に`tweet`というパッケージを間に挟んでいます。  
-よくあるサンプルでは独自にパッケージを追加したものがほとんどなく、今後の参考のためにこのようにしています。  
+よくあるサンプルでは独自にパッケージを追加したものがほとんどないためです。  
 
 次は設定したルーティングに必要なコントローラーを作成してきましょう。   
 
 ### Controllerの作成
 
-PlayではControllerクラスでリクエストに対しての処理を受け取ります。  
-Controller内にあるリクエストに対するメソッドは一般的にアクションと呼ばれます。(他のプログラミング言語、フレームワークでも同様です)  
+Playでは`app/controllers`以下にControllerクラスを作成し、リクエストに対する処理を実装していきます。  
+余談ですが、Controllerにあるリクエストに対するメソッドは、一般的にアクションと呼ばれますので覚えておくと良いでしょう。(他のプログラミング言語、フレームワークでも同様です)  
 
-ここでは`TweetController.scala`を作成し、その中に`list`アクションを作成していきます。  
+今回も慣習に合わせて`app/controllers`にファイルを作成していきます。  
+先ほど`routes`ファイルに記載した設定に合わせて、`app/controllers/tweet/TweetController.scala`を作成し、その中に`list`アクションを実装していきます。  
 
 `app/controller/tweet/TweetController.scala`
 ```scala
@@ -131,7 +142,7 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 }
 ```
 
-プログラム内にコメントで各実装の説明を記載していますが、少し難しい部分も多いためよくわからない部分は慣れるまでは一旦深追いしなくても大丈夫です。  
+プログラム内にコメントで各実装の説明を記載していますが、少し難しい部分も多いためよくわからない部分は慣れるまでは深追いしなくても大丈夫です。  
 今回覚えておきたいのは以下の部分です。  
 
 ```scala
@@ -143,7 +154,7 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 まず`Action { ...` の部分は言語として用意された構文ではありません。  
 正確ではありませんが、イメージとしては`Action(request: Request => { block })` というメソッドの呼び出しになります。  
 
-この`{ block }`の部分が`implicit request: Request[AnyContent] =>`以後に記載されているプログラム全体です。  
+この`{ block }`の部分が`{ implicit request: Request[AnyContent] => ... }`以後に記載されているプログラム全体です。  
 今回の場合には以下の部分がブロック内の実装になっていますね。  
 
 ```scala
@@ -151,6 +162,8 @@ Ok(views.html.tweet.list())
 ```
 
 この部分はHTTPステータスコードの`200 OK`をreturnしつつ、レスポンスとして`views.html.tweet.list`の画面を返すという意味になります。  
+`200 OK`にあたるのが`Ok()`というメソッドのような部分です。  
+これ以外にも`Redirect()`や`NotFound()`などがあり、それぞれが名前の示すステータスコードに紐づいています。  
 
 これで`http://localhost:9000/list`のリクエストに対してのアクションを作成できました。  
 一度プログラムをコンパイルしてみましょう。  
@@ -168,12 +181,14 @@ $ sbt compile
 
 ### 画面の作成
 
-Playではデフォルトでは`Twirl`というテンプレートエンジンを利用して画面を作成します。  
-Twirlのファイルは`views/`直下に配置されており、拡張子が`.scala.html`となっています。  
+Playのデフォルトでは`Twirl`というテンプレートエンジンを利用して画面を作成します。  
+Twirlのファイルは`app/views/`以下に配置されており、拡張子が`.scala.html`となっています。  
 今回は`views/tweet/list.scala.html`を作成していきます。  
 
-このフォルダ構成が先ほどの`Ok(views.html.tweet.list())`の指定とマッピングされています。  
-以下のようなイメージですね。  
+view以下のフォルダ構成は先ほどの`Ok(views.html.tweet.list())`の指定とマッピングされています。  
+今回の`views.html.tweet.list()`の場合は`views/tweet/list.scala.html`ですね。  
+
+この紐付き解決は以下のような形になっています。  
 `views.html`   => `views/`  
 `tweet.list()` => `tweet/list.scala.html`  
 
@@ -223,7 +238,7 @@ case class Tweet(
 ```
 
 非常にシンプルなクラスになりました。  
-`case class`についての説明は省略しますが、非常に雑に説明すると`toString`, `equals`がいい感じに実装されていたり`apply`や`unapply`メソッドなどが実装されている便利なClassです。  
+`case class`についての説明は省略しますが、非常に雑に説明すると`toString`, `equals`がいい感じに実装されていたりする便利なClassです。  
 
 #### モデルをViewへ渡す
 
@@ -242,8 +257,9 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 ```
 
 今回はDBを利用しないので、Controller側に決め打ちでモデルのインスタンスを実装しています。  
-`views.html.tweet.list()`に引数としてtweetsを渡すところまではできました。  
-次はView側で引き渡されたTweetを受け取って表示をしてみます。  
+`views.html.tweet.list()`に引数としてtweetsを渡しているところにも注目してください。  
+
+Controllerからviewへモデルを渡せたので、次はView側で引き渡されたTweetを受け取って表示をしてみます。  
 
 #### Viewでモデルを受け取り表示
 
@@ -251,9 +267,6 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 
 `app/views/tweet/list.scala.html`
 ```html
-@* Twirl側でもクラスを正しく認識するためにscalaファイルと同様にimportが必要です。  *@
-@import models.Tweet
-
 @*
 以下はview templeteでの引数を受け取る記載です。
 今回はTweetの一覧を取得するため@(tweets: Seq[Tweet]) となっています。
@@ -271,7 +284,7 @@ def list() =  Action { implicit request: Request[AnyContent] =>
 }
 ```
 
-修正内容はプログラム上のコメントの通りになりますが、新しくimportと引数の受け取り、受け取ったインスタンの出力を追加してあります。  
+修正内容はプログラム上のコメントの通りになりますが、新しく引数の受け取り、受け取ったインスタンの出力を追加してあります。  
 Twirlの記法については[こちら](https://www.playframework.com/documentation/ja/2.3.x/ScalaTemplates)を参考にしてください。  
 
 これで一覧表示の実装は完了です。  
@@ -346,26 +359,25 @@ class TweetController @Inject()(val controllerComponents: ControllerComponents) 
 
 ```
 
-まずtweetsをフィールドとして定義し直しています。  
+まずtweetsをクラスのフィールドとして定義し直しています。  
 これはDBなしでデータを一定期間保持しておくための実装です。  
 
 showメソッドの中でOption型を直接getしていますが、これはnullに対して安全な処理ができるメリットを捨ててしまうことになるため、後ほど修正していきます。  
 
 `views/tweet/show.scala.html`
 ```html
-@import models.Tweet
 @(tweet: Tweet)
 
 @main("詳細画面") {
   <h1>詳細画面です</h1>
   <div id="detail">
     <div>id: @tweet.id</div>
-    <div>id: @tweet.content</div>
+    <div>content: @tweet.content</div>
   </div>
 }
 ```
 
-TwirlについてはSeqだった引数がTweetになっているくらいの変化しかありません。  
+Twirlについてはlistページとほとんど同じですね。  
 
 ここまでできたら、以下のURLにアクセスして画面が正常に表示できるか確認してみましょう。  
 [http://localhost:9000/tweet/1](http://localhost:9000/tweet/1)
@@ -380,7 +392,6 @@ TwirlについてはSeqだった引数がTweetになっているくらいの変�
 
 `views/tweet/list.scala.html`
 ```html
-@import models.Tweet
 @(tweets: Seq[Tweet])
 
 @main("一覧画面") {
@@ -396,12 +407,12 @@ TwirlについてはSeqだった引数がTweetになっているくらいの変�
 }
 ```
 
-href部分ではroutesファイルの設定から、紐づくURLを作成するようにしてあります。  
+`href="@controllers.tweet.routes.TweetController.show(tweet.id.getOrElse(0))"`の部分では、routesファイルの設定からURLを作成するようにしてあります。  
 書き方は`{Controllerのパッケージ}.routes.{Controller名}`となります。
   
-コメントにも記載していますが、ウェブ上で良くみる`@routes`から始まる書き方は、Playのデフォルトで`controllers.routes`がインポートされているから動作しているものです。  
+コメントにも記載していますが、ウェブ上で良くみる`@routes`から始まる書き方は、Playがデフォルトで`controllers.routes`をインポートしているために{controllers}が省略されたものです。  
 
-ここを理解していないと独自でパッケージを切ったりしていく時に非常に苦労することになるので頭の隅に残しておきましょう。  
+ここを理解していないと独自でパッケージを切ったりしていく時に非常に苦労することになるので、頭の隅に残しておきましょう。  
 
 では、最後に動作確認です。  
 [http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)

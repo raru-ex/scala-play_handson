@@ -29,12 +29,15 @@
 早速ですがPlayの導入を行っていきます。  
 sbtのコマンドからPlayのシードプロジェクトを作成してみましょう。  
 
+今回は本ハンズオン用のリポジトリを利用する前提で進めます。  
+
 任意のプロジェクトディレクトリを作成して、以下のコマンドを実行してください。  
 あくまで例になりますが、以下にMacでの作業をイメージしてコマンドを記載していきます。  
 
 ```sh
 # 参照: https://www.playframework.com/documentation/2.8.x/NewApplication
-$ cd ~/Documents/workspace/
+$ git clone git@github.com:Christina-Inching-Triceps/scala-play_handson.git
+$ cd scala-play_handson/lesson1/handson/
 $ sbt new playframework/play-scala-seed.g8
 # ... 省略
 
@@ -64,7 +67,7 @@ organizationは個人のドメインをお持ちの方は、その逆順で記�
 `sbt new`が完了したら、ローカルでサーバを起動して動作を確認してみましょう。  
 
 ```sh
-$ cd {your_project_root}
+$ cd play-handson
 $ sbt run
 
 # .... 以下の表示がでたらサーバが起動しています。
@@ -75,6 +78,7 @@ $ sbt run
 # (Server started, use Enter to stop and go back to the console...)
 ```
 
+初回起動は関連するライブラリのダウンロードなどが行われるため、時間がかかります。  
 サーバが起動したら、ブラウザからアクセスをしてみましょう。  
 [http://localhost:9000](http://localhost:9000)
 
@@ -82,15 +86,12 @@ $ sbt run
 
 <img src="images/01_play_hello_world.png" width="450">
 
-導入自体はこれで完了になります。  
+Playの導入はこれで完了になります。  
 簡単で良いですね。  
 
 ### 統合開発環境(IntelliJ IDEA)のセットアップ
 
 今回はIntelliJ IDEA 無償版のセットアップの手順を記載していきます。  
-
-Visual Studio Code + Metalsについては、いつの日にか手順を作ってみたいと思っております。  
-今回は作っておりません。  
 
 #### IDEAのダウンロード
 
