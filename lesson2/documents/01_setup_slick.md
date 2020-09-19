@@ -4,31 +4,62 @@
 
 ### build.sbtに依存関係を追加
 
-今回はplay-slickやslick-codegenを利用して環境を作成していきます。  
+今回はPlay-Slickやslick-codegenを利用して環境を作成していきます。  
 
 外部のライブラリを利用するには`build.sbt`の設定が必要です。  
 Playでは`build.sbt`に依存関係を追加することで、対象のライブラリをダウンロードして利用できるようになります。  
 
-本ハンズオンで利用するものとして、以下の依存関関係を`build.sbt`へ追加してください。  
+本ハンズオンで利用するものとして、以下のライブラリを依存関係に追加していきます。  
 
-```scala 
-evolutions,
+```
 // 最新のplay-slickを指定。
-"com.typesafe.play"      %% "play-slick"            % "5.0.0",
-"com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
-// play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
+"com.typesafe.play"      %% "play-slick"            % "5.0.0"
+
 // https://github.com/playframework/play-slick#all-releases
-"com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+"com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0"
+
+// play-slickの5.0.0ではslick 3.3.2を利用しているため、codegenも同様に3.3.2を指定しています。
+"com.typesafe.slick"     %% "slick-codegen"         % "3.3.2"
+
 // 指定すべきmysql-connectorのバージョンは以下のリンク先を参照
 // https://scala-slick.org/doc/3.3.1/database.html
-"mysql"                   % "mysql-connector-java"  % "6.0.6",
+"mysql"                   % "mysql-connector-java"  % "6.0.6"
 ```
 
-依存関係を追加すると`build.sbt`ファイルは以下のようになります。  
+このとき `libraryDependencies` の記載の仕方を見やすいように少し変更してみましょう。  
+
+`before`
+```scala
+libraryDependencies += guice
+libraryDependencies += evolutions
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
+libraryDependencies += "com.typesafe.play"      %% "play-slick"            % "5.0.0"
+libraryDependencies += "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0"
+libraryDependencies += "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2"
+libraryDependencies += "mysql"                   % "mysql-connector-java"  % "6.0.6"
+```
+
+`after`
+```scala
+libraryDependencies ++= Seq(
+  guice,
+  evolutions,
+  "org.scalatestplus.play" %% "scalatestplus-play"    % "5.0.0" % Test,
+  "com.typesafe.play"      %% "play-slick"            % "5.0.0",
+  "com.typesafe.play"      %% "play-slick-evolutions" % "5.0.0",
+  "com.typesafe.slick"     %% "slick-codegen"         % "3.3.2",
+  "mysql"                   % "mysql-connector-java"  % "6.0.6",
+)
+```
+
+afterの方が個人的には見易いと思っています。  
+ここはご自身の気に入ったフォーマットで対応いただいて問題ありません。  
+
+この設定を行った後は、`build.sbt`全体は以下のようになります。  
 `build.sbt`
 ```scala
 name := """play-handson"""
-organization := "com.example"
+organization := "tasks"
 
 version := "1.0-SNAPSHOT"
 
@@ -115,13 +146,15 @@ slickのデフォルトでの参照設定は`slick.dbs.{db_name}.db` という�
 ### Migration用のsqlを作成
 
 DB接続の設定ができたので、次はDBに対して実行するSQLを用意します。  
-evolutionsではデフォルトで`conf/evolutions/{db_name}/{連番}.sql`というファイルを検索しにいくので、以下のような構造でフォルダ/ファイルを作成してください。  
+evolutionsではデフォルトで`conf/evolutions/{db_name}/{連番}.sql`というファイルを探しにいくので、以下のような構造でフォルダ/ファイルを作成してください。  
 
 ```sh
-conf
-└── evolutions
-    └── default
-        └── 1.sql
+# conf
+# └── evolutions
+#     └── default
+#         └── 1.sql
+
+$ mkdir -p conf/evolutions/default
 ```
 
 1.sqlは一旦以下のようにシンプルな形で記載して、動作を確認していきましょう。  
@@ -185,7 +218,7 @@ mysql> show tables;
 ## slick-codegenでslickのモデルを作成
 
 slick-codegenというのはDBのtable情報からslickで利用するモデルを自動生成してくれるライブラリです。  
-codegeはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
+codegenはコンパイル時の自動実行とsbt commandに登録しての手動実行など、いくつかの実行方法があります。  
 今回はsbt taskとして登録して手動実行できるように設定してきますが、sbtについては詳しく知らないため、設定方法のみ記述し詳細については割愛させていただきます。  
 
 ### sbt taskの作成
@@ -195,15 +228,15 @@ codegeはコンパイル時の自動実行とsbt commandに登録しての手動
 ```scala
 // add code generation task
 lazy val slickCodeGen = taskKey[Unit]("execute Slick CodeGen")
-slickCodeGen         := (runMain in Compile).toTask(" com.example.SlickCodeGen").value
+slickCodeGen         := (runMain in Compile).toTask(" tasks.SlickCodeGen").value
 ```
 
 1行目で`slickCodeGen`という名前でコマンド(Task)のインスタンスを作成しています。  
 2行目ではそのタスク名に対して、特定のクラス処理を登録するようなことをしています。※ 詳細は理解できていません。  
-sbtでは`:=`を演算子を利用してKeyに対しての実態を定義していきます。  
+sbtでは`:=`を演算子を利用してKeyに対しての実体を定義していきます。  
 
-ここでは`com.example.SlickCodeGen`というクラスを登録していますね。  
-そのためこれから、この名前に一致するクラスを作成していきます。  
+ここでは`tasks.SlickCodeGen`というクラスを登録していますね。  
+そのため、これからこの名前と一致するクラスを作成していきます。  
 
 また`toTask()`に渡すときに、先頭にスペースを追加していますが、これがないと正常にファイルの呼び出しが行えませんので注意してください。  
 
@@ -219,7 +252,7 @@ sbtでは`:=`を演算子を利用してKeyに対しての実態を定義して�
 `app/tasks/SlickCodeGen.scala`
 ```scala
 // Taskに登録したものと同様にpackageを指定
-package com.example
+package tasks
 
 import com.typesafe.config.ConfigFactory
 import slick.codegen.SourceCodeGenerator
@@ -290,7 +323,7 @@ slick部分の構造が少し変更されているので気をつけてくださ
 #### TypesafeConfig導入の補足
 
 通常のplayではconfigはControllerへのDIから利用するため、直接ロードするのはあまり御行儀が良いものではありません。  
-しかしバッチプログラムではControllerを経由できない、そんなにテストするようなコードでもない、ということで直接取り出すことを選択しています。  
+しかしバッチプログラムではControllerを経由できないということで直接取り出すことを選択しています。  
 
 ### SlickCodeGen Taskの実行
 
@@ -313,7 +346,7 @@ output
 
 今回はevolutionsのテーブルも対象に取られているため、かなり`うわっ...`となるファイルになっていると思いますが、Tweet部分に限れば以下の部分だけです。   
 
-`output/codegen/com/example/Tables.scala`
+`output/codegen/tasks/Tables.scala`
 ```scala
   implicit def GetResultTweetRow(implicit e0: GR[Long], e1: GR[String]): GR[TweetRow] = GR{
     prs => import prs._
@@ -382,7 +415,7 @@ DROP TABLE tweet;
 
 `app/tasks/CustomSlickCodeGen.scala`
 ```scala
-package com.example
+package tasks
 
 import com.typesafe.config.ConfigFactory
 import slick.codegen.SourceCodeGenerator
@@ -419,11 +452,11 @@ object CustomSlickCodeGen extends App {
     password = this.password
   )
 
-  // evolutions用のテーブルを対象から外す
+  // evolutions用のテーブルをモデル作成の対象から外す
   val ignoreTables        = Seq("play_evolutions")
   val codegenTargetTables = MySQLProfile.createModel(Some(
     MySQLProfile.defaultTables.map(
-      _.filter(table => !ignoreTables.contains(table.name.name.toLowerCase))
+      _.filterNot(table => ignoreTables.contains(table.name.name.toLowerCase))
     )
   ))
 
@@ -441,7 +474,7 @@ object CustomSlickCodeGen extends App {
       override def hugeClassEnabled = false
 
       override def Column = new Column(_){
-        // datetimeはデファオルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
+        // datetimeはデフォルトでjava.sql.Timestamp型になるので、LocalDateTimeに書き換え
         override def rawType = model.tpe match {
           case "java.sql.Timestamp" => "LocalDateTime"
           case _                    => super.rawType
@@ -459,7 +492,7 @@ object CustomSlickCodeGen extends App {
 `build.sbt`
 ```scala
 // -- build.sbt: slickCodeGenコマンドに紐づけるクラスの変更
-slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCodeGen").value
+slickCodeGen         := (runMain in Compile).toTask(" tasks.CustomSlickCodeGen").value
 ```
 
 今回の修正はやや複雑になっていますね。  
@@ -468,7 +501,7 @@ slickCodeGen         := (runMain in Compile).toTask(" com.example.CustomSlickCod
 
 #### Codegenで自動生成される日付型の型を変更
 
-本セクションでの目的である日付型の変換をしている部分はここです。  
+本セクションでの目的である日付型として利用するクラスを差し替えている部分はここです。  
 
 ```scala
 override def Column = new Column(_){
@@ -504,7 +537,7 @@ override def code = "import java.time.{LocalDateTime}" + "\n" + super.code
 val ignoreTables        = Seq("play_evolutions")
 val codegenTargetTables = MySQLProfile.createModel(Some(
   MySQLProfile.defaultTables.map(
-    _.filter(table => !ignoreTables.contains(table.name.name.toLowerCase))
+    _.filterNot(table => ignoreTables.contains(table.name.name.toLowerCase))
   )
 ))
 ```
@@ -517,12 +550,13 @@ val codegenTargetTables = MySQLProfile.createModel(Some(
 
 ```sh
 # 今回は今までと違う形で実行。
+# Dockerのシェルからexitして、ホスト側のシェルから実行してください
 $ docker-compose exec play-scala sbt slickCodeGen
 ```
 
 実行後に出力されたファイルの一部がこちら
 
-`output/codegen/com/example/Tables.scala`
+`output/codegen/tasks/Tables.scala`
 ```scala
 // ... 省略
 import java.time.{LocalDateTime}
@@ -569,7 +603,7 @@ RDBごとに違うとありましたが、実際に確認してみます。
 [Oracleの場合]
 <img src="images/05_profile_oracle.png" width="450">
 
-このようにそれぞれ日付型の型に割り当てられたSQL Typeに差があります。  
+このようにそれぞれ日付型に割り当てられたSQL Typeに差があります。  
 細かいことは不明ですが、厳密にやろうとするとMySQLでは日付関連のデータの持ち方に振れ幅が大きくて、parserが統一できなかったのかもしれないですね。 (わかりませんが)  
 
 ### 未対応の場合のエラーと原因
@@ -613,7 +647,7 @@ Caused by: java.time.format.DateTimeParseException: Text '2020-03-15 13:15:00' c
 `at slick.jdbc.MySQLProfile$JdbcTypes$$anon$4.getValue(MySQLProfile.scala:389)`  
 
 これが今回エラーが発生している箇所です。  
-この`slic.jdbc.MySQLProfile`がどこで利用されているかというと、codegenで自動生成したModelにあります。  
+この`slick.jdbc.MySQLProfile`がどこで利用されているかというと、codegenで自動生成したModelにあります。  
 
 codegenで生成されたコードを見てみると、以下のようにMySQLProfileを利用しているところがありますね。  
 ```scala
@@ -675,8 +709,8 @@ indexもちょうど10番目ですね。
 それぞれメリット/デメリット向いている用途などがありますが、今回は３番目の独自Profileを実装する方式で対応をしていきたいと思います。  
 
 この方法を選択する理由はシンプルに`公式推奨`だからです。  
-私は一番理解しやすいのは1番だと考えていて、それがrookies資料としては適切なのではと悩みました。  
-ただ、全てのテーブルのモデルのmappingを書いていくのは効率が悪すぎるのと、公式が推奨する形が一番御行儀が良いと思うので、Profile拡張で作成をしていきたいと思います。  
+私は一番理解しやすいのは1番だと考えていて、それが初学者向け資料としては適切なのではと悩みました。  
+ただ、全てのテーブルでモデルのmappingを書いていくのは効率が悪すぎるのと、公式が推奨する形が一番御行儀が良いと思うので、Profile拡張で作成をしていきたいと思います。  
 
 Profile拡張という言葉の持つパワーのせいで難しい気がしますが、実は`LocalDateTime.parse`の引数に渡すformatterを実装するだけという超シンプル対応です。  
 あまり難しく考えずに「既存実装コピペしてLocalDateTimeのformatterだけ直す」と思っていただければ、心理的負荷は減るのかなと思います。  
@@ -782,8 +816,20 @@ object MyDBProfile extends MyDBProfile
 ```
 
 結構なコード量に見えますが、ほとんどコピペしただけです。  
-大事な部分は以下のパース部分ですね。  
+大事な部分は以下のパース部分とformatterの作成部分ですね。  
 ```
+// formatter作成部分
+// PostgresのProfileを参考にミリ秒も含めて対応できるformatterを実装
+rivate[this] val formatter = {
+  new DateTimeFormatterBuilder()
+    .append(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    .optionalStart()
+    .appendFraction(ChronoField.NANO_OF_SECOND,0,9,true)
+    .optionalEnd()
+    .toFormatter()
+}
+
+// parse部分
 case dateString => LocalDateTime.parse(dateString, formatter)
 ```
 
@@ -817,7 +863,7 @@ The Play Slick module makes Slick a first-class citizen of Play, and consists of
 
 evolutionsをサポートしているというのは、比較的どうでもいいのでもう片方に注目します。  
 
-私もなんとなく思ってましたが、slickをplayのライフサイクルの中に組み込んでくれるものがplay-slickのようです。  
+私もなんとなく思ってましたが、slickをPlayのライフサイクルの中に組み込んでくれるものがplay-slickのようです。  
 設定情報からDB connectionを作成したり破棄したりの管理を良い感じにやってくれるもの、くらいの認識で良いのではないかと思います。  
 
 なので、他のモデルであったり先ほどまで作成していたprofileなどライフサイクルと関係ない部分は通常のslickと変わらないと言うことですね。  
@@ -828,14 +874,14 @@ evolutionsをサポートしているというのは、比較的どうでもい�
 公式サイトのページでは[こちらを参照](https://www.playframework.com/documentation/2.8.x/PlaySlick#DatabaseConfig-via-runtime-dependency-injection)  
 
 公式サイトの例ではcontrollerに対してDIするような実装になっていますね。  
-以下はあくまで「サンプルコード」で実際に利用するコードではありませんが、この実装を今の`TweetController`に適用する以下のような実装になります。(実装する必要はありません)
+以下はあくまで「サンプルコード」で実際に利用するコードではありませんが、この実装を今の`TweetController`に適用すると以下のような実装になります。(実装する必要はありません)
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
 @Singleton
 class TweetController @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider, // play-slick
-  val controllerComponents: ControllerComponents
+  val controllerComponents:       ControllerComponents
 )(implicit ec: ExecutionContext)
 extends BaseController
 with I18nSupport
@@ -851,7 +897,7 @@ with HasDatabaseConfigProvider[JdbcProfile]{ // play-slick
 ```
 
 `// play-slick` とコメントを書いた部分がplay-slick用の実装です。  
-実装の実態は`HasDatabaseConfigProvider`が持っていて、その中で利用されている変数として`DatabaseConfigProvider`がいます。  
+実装の実体は`HasDatabaseConfigProvider`が持っていて、その中で利用されている変数として`DatabaseConfigProvider`がいます。  
 この`DatabaseConfigProvider`をplay-slickが設定ファイルから組み立ててInject、その結果適切なprofileを読み取れるようになるという仕組みです。  
 
 Controllerクラス内部の`import dbConfig.profile.api._`の部分がProfileからslickの処理に必要な機能をimportしている部分になります。  
@@ -869,6 +915,7 @@ play-slickを利用することでRDBの違いを簡単に設定ファイルに�
 slick-codegeで作成したクラスや、play-slickのサンプルを参考にしながら作成していきます。  
 
 まずはモデル作成していくのですが、元々作成されていたTweetモデルを移動させて現在のtableに合わせて調整をします。  
+この際に元々あった `app/models/` フォルダ以下は全てコピーではなく、移動または削除してください。  
 
 `app/models/Tweet.scala` -> `app/slick/models/Tweet.scala`  
 ```scala
@@ -965,7 +1012,7 @@ Repositoryはインスタンスを複数持つ必要がない(とおもう)の�
 また今回`(implicit ec: ExecutionContext)`の記述も追加しています。  
 slickは問合せ結果を`Future`型で返してくるため、Futureを利用するためにExecutionContextが必要になります。  
 そこでPlay標準で用意されているExecutionContextを利用できるように、クラス宣言時にDIで受け取るようにしています。  
-この辺はScalaの話になってしまうので本ハンズオンでは割愛します。  
+implicitやFutureについてはScalaの話になってしまうので本ハンズオンでは割愛します。  
 
 次に実装の下の部分にあるTable Mappingのブロックです。  
 
@@ -1200,7 +1247,6 @@ trait LocalDateTimeColumMapper {
 
 本当は直接LocalDateTimeに紐づけたいのですが、MySQLProfileにでLocalDateTimeへのマッピングが用意されているので、ここで作成したMappedColumnTypeより先にMySQLProfileのgetValue処理が呼び出されてしまうようでした。  
 
-
 例えば以下のようなMappingを、作成して。  
 
 ```scala
@@ -1215,7 +1261,7 @@ MappedColumnType.base[LocalDateTime, String] (
 `val createdAt: Rep[LocalDateTime] = column[LocalDateTime]("created_at")`
 
 この場合Profileに定義されているLocalDateTimeのマッピングが先に処理されて、その後にMappedColumnTypeの処理に移ろうします。  
-なので結局はgetValueのLocalDateTime.parseの箇所で落ちてしまうんです。  
+なので結局はMySqlProfile側のgetValueのLocalDateTime.parseの箇所で落ちてしまうんです。  
 
 かといってStringに対してのmappingにしてしまうと、普通にStringで使いたいものについても変換がかかってしまいます。  
 そのためLocalDateTimeを直接使うことができません。  
