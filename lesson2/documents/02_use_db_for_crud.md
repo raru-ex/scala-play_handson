@@ -247,7 +247,7 @@ def findById(id: Long): Future[Option[Tweet]] = db.run(
 ```
 
 sampleで作成していた処理と似ていますが、今回は主キーであるidでデータを取得するためOption型でデータを取得しています。  
-filterはSQLでいうところの`where句`にあたります。  
+filterはSQLでいうところの `where` にあたります。  
 単純にfilterを行うとデータがSeqとなるため、headOptionでOptionとして取得しています。  
 
 慣れてしまうとScalaでmutableのArrayを扱うよりも、こちらの方が余程単純です。  
