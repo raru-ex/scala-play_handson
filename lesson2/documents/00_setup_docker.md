@@ -14,7 +14,7 @@ authors: chiristina.inching.triceps
 ## Docker環境のセットアップ
 
 ハンズオンで開発を行うための環境をセットアップします。  
-Dockerを利用して環境を作成しているため、手順兼説明資料として本章を残します。  
+Dockerを利用して環境を作成しているため、手順書兼説明資料として本章を残します。  
 ハンズオン用のプロジェクトにはDocker設定が完了している状態のものを配置しているので、この章は必ずしもご自身で対応していただく必要はありません。  
 今後自身でプロジェクトを作成する際や、ハンズオン用プロジェクトの構成が気になる人は参考にしていただければと思います。  
 
@@ -128,7 +128,7 @@ Playが起動したらhost側のブラウザから以下のurlからサーバに
 ### DockerでDBのセットアップ
 
 MySQLを利用するDBのdocker-compose設定を行なっていきます。  
-`project_root` 直下に以下のようにディレクトリ/ファイルを作成してください。  
+`project_root` 直下に以下のようにディレクトリ/ファイルを作成していきましょう。  
 `init.sql` を作成していますが、現状利用しないため中身は空のままとしておいてください。  
 
 ```sh
@@ -140,6 +140,17 @@ docker
     ├── my.cnf
     └── mysql_data/
 ```
+
+ファイル作成は以下の手順で行えます。  
+
+```sh
+$ mkdir -p docker/db/init
+$ touch docker/db/Dockerfile
+$ touch docker/db/init/init.sql
+$ touch docker/db/my.cnf
+```
+
+mysql_dataフォルダを作成していませんが、これはdocker起動時のMySQLインストールをするタイミングに作成されるため、手動で作成する必要はありません。  
 
 #### Dockerfileの設定
 
@@ -162,6 +173,8 @@ ENV LC_ALL ja_JP.UTF-8
 # docker/db/my.cnfをdockerイメージ上の/etc/...にコピーして配置
 COPY ./my.cnf /etc/mysql/conf.d/my.cnf
 ```
+
+my.cnfの中身はまだ設定されていませんが、これは起動時にファイルをコピーするという設定になるのでこれからcnfの設定を行えば問題ありません。  
 
 #### my.cnfを配置
 

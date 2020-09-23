@@ -14,52 +14,52 @@
 `app/slick/repositories/TweetRepository.scala`
 ```scala
 // ...省略
-private val tweet = new TableQuery(tag => new TweetTable(tag))
+private val query = new TableQuery(tag => new TweetTable(tag))
 
 // ########## [DBIO Methods] ##########
 
 /**
   * tweetを全件取得
   */
-def all(): Future[Seq[Tweet]] = db.run(tweet.result)
+def all(): Future[Seq[Tweet]] = db.run(query.result)
 ```
 
 slickでは`TableQuery`のインスタンスを利用してTableへアクセスを行います。  
 細かい内部の動きは割愛しますが`TweetTable`のインスタンスを渡して作成されているため、Tweetテーブルに対しての処理が行えるようになっているわけですね。  
-それを行っているのが以下です。  
+インスタンス作成を行っているのが以下です。  
 
 ```scala
-private val tweet = new TableQuery(tag => new TweetTable(tag))
+private val query = new TableQuery(tag => new TweetTable(tag))
 ```
 
 そしてここで生成されたインスタンスを利用して、実際に問合せを行うための処理が以下の`all()`メソッドです。  
 
 ```scala
-def all(): Future[Seq[Tweet]] = db.run(tweet.result)
+def all(): Future[Seq[Tweet]] = db.run(query.result)
 ```
 
-`tweet.result`の部分がqueryを組み立てている場所になります。  
+`query.result`の部分がQueryを組み立てている場所になります。  
 今回は何もせずにテーブルのデータを全件取得しているというQueryになっています。  
 
-これだとわかりづらいので、他にもサンプル実装を紹介してみます。  
+これだとわかりづらいので、他にもサンプルの実装を紹介してみます。  
 
 ```scala
 // idが偶数のものだけ抽出
 def allOdd(): Future[Seq[Tweet]] = db.run(
-  tweet.filter(x => x.id % 2L === 0L).result
+  query.filter(x => x.id % 2L === 0L).result
 )
 
 // idが一致するものを取得
 def findById(id: Long): Future[Seq[Tweet]] = db.run(
-  tweet.filter(x => x.id  === id).result
+  query.filter(x => x.id  === id).result
 )
 ```
 
-TableQueryのインスタンスであるtweet変数を起点にデータを絞り込んでいるのがわかりますね。  
+TableQueryのインスタンスであるquery変数を起点にデータを絞り込んでいるのがわかりますね。  
 
 最後に`db.run`の部分を説明します。  
 
-`tweet.result`はまだQueryを組み立てだけの状態なので、これだけでは実際にDBへの問い合わせは行われません。  
+`query.result`はまだQueryを組み立てだけの状態なので、これだけでは実際にDBへの問い合わせは行われません。  
 実際にDBへの処理が行われるのは`db.run`が実行されたタイミングです。  
 
 ここがplay-slickの場合には`HasDatabaseConfigProvider`に隠れている部分でもあります。  
@@ -70,17 +70,18 @@ val db = Database.forConfig("your_db_setting")
 ```
 
 これで`def all()`の準備と理解ができました。  
-次はControllerからこれを呼び出して一覧で表示できるようにしていきます。  
+次はControllerからこれを呼び出して、一覧で表示できるようにしていきます。  
 
 ### Controllerの修正
 
-Repositoryにデータ取得処理を追加できたので、それを呼び出す側のControllerを修正していきます。  
+Repositoryにデータ取得処理を追加できたので、それを呼び出すController側を修正していきます。  
 Controllerクラスも行数が大きくなっているので、修正した部分だけコードを載せていきますね。  
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
 import slick.models.Tweet
 import slick.repositories.TweetRepository
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class TweetController @Inject()(
@@ -121,8 +122,8 @@ class TweetController @Inject()(
 )(implicit ec: ExecutionContext)
 ```
 
-ここではInjectの対象にrepositoryを追加しています。  
-こうすることで実行時に`tweetRepository`にインスタンスを注入してくれるため、コントローラ内でrepositoryを参照できるようになります。  
+ここではInjectの対象にRepositoryを追加しています。  
+こうすることで実行時に`tweetRepository`にインスタンスを注入してくれるようになります。  
 
 またRepositoryから受け取ったFutureを処理する必要があるので`(implicit ec: ExecutionContext)`を追加して、Futureに渡せるようにしています。  
 
@@ -143,12 +144,31 @@ def list() =  Action async { implicit request: Request[AnyContent] =>
 もう一つが残りのfor式の部分ですね。  
 
 for部分は慣れていないとわかりづらいかもしれませんね。  
-scalaのfor式はmap/flatMapの糖衣構文になっており、今回のように1段の展開の場合には以下のコードと同じになります。  
+scalaのfor式はmap/flatMapの糖衣構文になっており、今回のようにforブロックの`<-`部分が1段の展開の場合には以下のコードと同じになります。  
 
 ```scala
-tweetRepository.all().map(results => 
+tweetRepository.all().map(results =>
   Ok(views.html.tweet.list(results))
 )
+```
+
+例えばこれが以下のように2段になると、map/flatMap展開になります。  
+一段目がflatMapで、二段目がmapになっていますね。  
+
+```scala
+for {
+  v1 <- tweetRepository.all()
+  v2 <- tweetRepository.all()
+} yield (v1, v2)
+
+/**
+上記の処理は以下と同義となります。  
+tweetRepository.all().flatMap { v1 =>
+  tweetRepository.all().map { v2 =>
+    (v1, v2)
+  }
+}
+*/
 ```
 
 今回tweetRepositoryのreturnがFuture型になるので、for式のreturnがFuture[Result]型になっています。  
@@ -169,7 +189,7 @@ PlayではActionメソッドはreturnにResult型を要求しますが、これ�
 
 実装は完了していますが、少しActionについて補足します。  
 
-先ほどの説明を見ると「Actionは逐次処理でAction asyncはFuture処理なんだ」と思うかもしれません。  
+先ほどの説明を見ると「Actionは同期処理でAction asyncは非同期処理なんだ」と思うかもしれません。  
 しかし実際にはActionとAction asyncに差はありません。  
 
 これは[公式ドキュメント](https://www.playframework.com/documentation/2.8.x/ScalaAsync#Actions-are-asynchronous-by-default)にもNoteとして記載されています。  
@@ -222,12 +242,12 @@ Action, Action asyncはbody内の処理がreturnする型が書きやすい方�
  * idを指定してTweetを取得
  */
 def findById(id: Long): Future[Option[Tweet]] = db.run(
-  tweet.filter(x => x.id  === id).result.headOption
+  query.filter(x => x.id  === id).result.headOption
 )
 ```
 
 sampleで作成していた処理と似ていますが、今回は主キーであるidでデータを取得するためOption型でデータを取得しています。  
-filterはSQLでいうところの`where句`にあたります。  
+filterはSQLでいうところの `where` にあたります。  
 単純にfilterを行うとデータがSeqとなるため、headOptionでOptionとして取得しています。  
 
 慣れてしまうとScalaでmutableのArrayを扱うよりも、こちらの方が余程単純です。  
@@ -237,7 +257,7 @@ filterはSQLでいうところの`where句`にあたります。
 
 ### Controllerの修正
 
-一覧の時の修正を参考に、こちらも処理を修正していきましょう。  
+一覧機能の修正を参考に、こちらも処理を修正していきましょう。  
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
@@ -257,7 +277,7 @@ filterはSQLでいうところの`where句`にあたります。
   }
 ```
 
-今回もActionを`async`にしてfor式を利用してFutureを処理しています。  
+今回もActionを`async`にして、for式でFutureを処理しています。  
 単純な処理であればこの形式で処理できてしまうので見やすくなりますね。  
 
 前回に引き続きViewに渡すモデルは変わっていないので、全体の修正は以上です。
@@ -314,7 +334,7 @@ def update(tweet: Tweet): Future[Int] = db.run(
 こちらの方がシンプルですね。  
 
 元の`update`メソッドでは古いデータをreturnするために、やや回りくどい実装になっています。  
-これは一つのメソッドの中でいくつかの処理を連続するサンプルとして記載してみました。  
+通常は引数として古いデータが渡されているので意図的にreturnする必要はないのですが、一つのメソッドの中でいくつかの処理を連続するサンプルとして記載してみました。  
 
 ちなみにDBIO.successfulを利用すると正常系として引数に渡したデータをreturnできます。  
 何かの拍子に利用したくなることもあると思いますので、SlickにもFuture.successfulみたいなものがあるんだな、程度に頭の中に残しておいていただけると良いと思います。  
@@ -350,12 +370,15 @@ def edit(id: Long) = Action async { implicit request: Request[AnyContent] =>
 ```
 
 基本的な修正は今まで同様で、まずは`Action`を`Action async`に修正しています。  
-また今までtweesのArrayからデータをfindしていたものをslickの`findById`から取得するように変更しています。  
+また今までtweetsのArrayからデータをfindしていたものをslickの`findById`から取得するように変更しています。  
 
 編集画面の表示はこれで完了ですね。  
 続いて、実際の更新処理である`update`を修正していきましょう。  
 
 ```scala
+import scala.concurrent.Future
+// ... 省略 ...
+
 /**
   * 対象のツイートを更新する
   */
@@ -446,8 +469,8 @@ def insert(tweet: Tweet): Future[Int]= db.run(
 こちらの方が見た目はシンプルです。  
 では、この二つの何が違うと言うと、それは最終的に返される結果の値です。  
 
-最初のプログラムにも書いてありますが`returning`メソッドを利用すると、登録後に登録されたデータの一部を返却することができます。  
-今回idはDBのTable側でAutoInc設定がされているため、登録時には未確定です。  
+最初のプログラムに書いてある`returning`メソッドを利用すると、登録されたデータの一部を返却することができます。  
+登録処理ではidはDBのAutoInc設定がされるため、登録時にはidが未確定です。  
 登録後にそのidを利用して関連テーブルにデータを登録するケースなどを考えると、実際に登録されたidが欲しくなりますよね。  
 そのため`query.map(_.id)`という形でidを返却するように`returning`に指定しているのです。
 
@@ -466,7 +489,7 @@ def insert(tweet: Tweet): Future[Int]= db.run(
 val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
 ```
 
-今回のTweetモデルのidはOption[Long]なのですが、column定義に`O.AutoInc`が設定されていることにより登録時にidの値が無視されるようになっています。  
+今回のTweetモデルのidはOption[Long]なのですが、column定義に`O.AutoInc`が設定されていることにより、登録時にidの値が無視されるようになっています。  
 これによりtweetモデルをそのまま登録処理に渡すことが可能です。  
 
 この説明は[ここ](http://scala-slick.org/doc/3.3.1/queries.html#inserting)に記載されていますが、以下に説明文を抜粋します。  
@@ -483,7 +506,7 @@ Repositoryの実装と説明は以上になります。
 ### Controllerの修正
 
 引き続きコントローラの修正を行います。  
-更新処理と同じように、今回は`register`と`store`アクションををみていきましょう。  
+更新処理と同じように、今回は`register`と`store`アクションをみていきましょう。  
 
 まずは`register`アクションです。  
 
@@ -498,13 +521,13 @@ def register() = Action { implicit request: Request[AnyContent] =>
 ```
 
 こちらは修正前のままの状態なのですが、特に修正は必要なさそうですね。  
-登録画面は特に画面上に必要なデータがないため、今回のDB利用のための修正の影響は受けていませんでした。  
+登録画面は画面上に必要なデータがないため、今回の修正の影響は受けていませんでした。  
 
 では、次は実際の登録処理である`store`です。  
 
 `app/controllers/tweet/TweetController.scala`
 ```scala
-**
+/**
  * 登録処理実を行う
  */
 def store() = Action async { implicit request: Request[AnyContent] =>
@@ -529,7 +552,7 @@ def store() = Action async { implicit request: Request[AnyContent] =>
 
 登録処理の修正は基本的に更新処理と同様です。  
 `Action`を`Action async`として失敗時、成功時共にFutureで処理をしています。  
-登録処理もrepositoryの処理を呼び出してデータを渡していますね。  
+登録処理もRepositoryの処理を呼び出してデータを渡していますね。  
 
 returningの説明をした後ではありますが、今回は返却されるidの値は利用しないので`_`に捨てています。  
 
@@ -566,7 +589,7 @@ def delete(idOpt: Option[Long]) = db.run(
 実装自体は変更処理と似ていますね。  
 `delete`もreturnはIntになっていて、削除された件数が返されます。  
 
-だた、今回はoverloadしたメソッドも用意してみました。  
+ただ今回はoverloadしたメソッドも用意してみました。  
 この処理では主キーを利用してデータをfilterしているため、Option[Long]に対してfilterがかけられます。  
 それを利用してOption[Long]を受け取る`delete`メソッドをメインにしつつ、Longを直接受け取る`delete`メソッドも定義しています。  
 
@@ -590,7 +613,7 @@ def delete() = Action async { implicit request: Request[AnyContent] =>
   // requestから直接値を取得するサンプル
   val idOpt = request.body.asFormUrlEncoded.get("id").headOption
   for {
-    // stringからlongへparseできない場合があるため御行儀は悪い
+    // toLongしているが、stringからlongへparseできない場合があるため御行儀は悪い
     result <- tweetRepository.delete(idOpt.map(_.toLong)) 
   } yield {
     // 削除対象の有無によって処理を分岐
@@ -606,7 +629,7 @@ def delete() = Action async { implicit request: Request[AnyContent] =>
 変更処理に似ていますね。  
 
 urlから受けとったidはstringになっているため、mapでLong型に変換をかけています。  
-本来は文字列がちゃんと数値に変換できるものなのか確認処理が必要ですが、これはurlからパラメータを取得する処理のサンプルとして記載してるので、その辺りのケアは割愛しています。  
+本来は文字列がちゃんと数値に変換できるものなのか確認が必要ですが、これはurlからパラメータを取得する処理のサンプルとして記載してるので、その辺りのケアは割愛しています。  
 
 さぁ、ここまで書けたら動作を確認してみましょう。  
 [http://localhost:9000/tweet/list](http://localhost:9000/tweet/list)  
