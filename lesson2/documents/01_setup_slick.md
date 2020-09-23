@@ -959,14 +959,14 @@ class TweetRepository @Inject()(
 extends HasDatabaseConfigProvider[JdbcProfile] {
   import profile.api._
 
-  private val tweet = new TableQuery(tag => new TweetTable(tag))
+  private val query = new TableQuery(tag => new TweetTable(tag))
 
   // ########## [DBIO Methods] ##########
 
   /**
     * tweetを全件取得
     */
-  def all(): Future[Seq[Tweet]] = db.run(tweet.result)
+  def all(): Future[Seq[Tweet]] = db.run(query.result)
 
   // ########## [Table Mapping] ##########
   private class TweetTable(_tableTag: Tag) extends Table[Tweet](_tableTag, Some("twitter_clone"), "tweet") {
